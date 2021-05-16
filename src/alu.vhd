@@ -5,12 +5,12 @@ use ieee.std_logic_misc.all;
 entity alu is 
 generic (WORDSIZE : integer := 16);
 port (                 	
-    A, B: in std_logic_vector(WORDSIZE-1 downto 0); 
-    S: in std_logic_vector(3 downto 0);
-    Cin: in std_logic;
-    FLAGS_Cin: in std_logic;
-    F: out std_logic_vector(WORDSIZE-1 downto 0);
-    ALU_FLAGS: out std_logic_vector(WORDSIZE-1 downto 0)
+    A, B : in std_logic_vector(WORDSIZE-1 downto 0); 
+    S : in std_logic_vector(3 downto 0);
+    F : out std_logic_vector(WORDSIZE-1 downto 0);
+    SetC, ClrC : out std_logic;
+    SetZ, ClrZ : out std_logic;
+    SetN, ClrN : out std_logic
     );            		
 end ALU; 
 
@@ -29,59 +29,106 @@ signal Carry_temp : std_logic_vector(WORDSIZE-1 DOWNTO 0);
 signal F_temp: std_logic_vector(WORDSIZE-1 downto 0); 
 signal Cin_temp : std_logic;
 signal N_flag : std_logic;
+signal N_flag_Con : std_logic;
 signal Z_flag : std_logic;
+signal Z_flag_Con : std_logic;
+signal C_flag : std_logic;
+signal C_flag_Con : std_logic;
+
+constant OP_MOV : std_logic_vector((S'length)-1 downto 0) := "0000";
+constant OP_ADD : std_logic_vector((S'length)-1 downto 0) := "0001";
+constant OP_SUB : std_logic_vector((S'length)-1 downto 0) := "0010";
+constant OP_AND : std_logic_vector((S'length)-1 downto 0) := "0011";
+constant OP_OR : std_logic_vector((S'length)-1 downto 0) := "0100";
+constant OP_SHL : std_logic_vector((S'length)-1 downto 0) := "0101";
+constant OP_SHR : std_logic_vector((S'length)-1 downto 0) := "0110";
+constant OP_RLC : std_logic_vector((S'length)-1 downto 0) := "0111";
+constant OP_RRC : std_logic_vector((S'length)-1 downto 0) := "1000";
+constant OP_SETC : std_logic_vector((S'length)-1 downto 0) := "1001";
+constant OP_CLRC : std_logic_vector((S'length)-1 downto 0) := "1010";
+constant OP_NOT : std_logic_vector((S'length)-1 downto 0) := "1011";
+constant OP_INC : std_logic_vector((S'length)-1 downto 0) := "1100";
+constant OP_DEC : std_logic_vector((S'length)-1 downto 0) := "1101";
+constant OP_NEG : std_logic_vector((S'length)-1 downto 0) := "1110";
+constant OP_CLR : std_logic_vector((S'length)-1 downto 0) := "1111";
 
 begin
 
-  Op2 <= B when S = "0000" or S = "1100" --ADD or ADC
-  else not B when S = "0001" or S = "1101" --SUB or SUBC
+  --operands
+  Op1 <= not A when S = OP_NEG   
+  else A;
+
+  Op2 <= not B when S = OP_SUB 
+  else (others => '1') when S = OP_DEC 
+  else B when S = OP_ADD or S = OP_AND or S = OP_OR 
   else (others => '0');
 
-  Cin_temp <= FLAGS_Cin when S = "1100"
-  else FLAGS_Cin when S = "1101"
-  else Cin; 
-  
+  --Cin
+  Cin_temp <= '1' when S = OP_INC or S = OP_NEG or S = OP_SUB
+  else '0'; 
   --generate the full adders
-  Adders_output_0: my_adder port map(A(0), Op2(0), Cin_temp, F_temp(0), Carry_temp(0));
+  Adders_output_0: my_adder port map(Op1(0), Op2(0), Cin_temp, F_temp(0), Carry_temp(0));
   adders: for i in 1 to WORDSIZE-1 generate
-    Adder_output: my_adder port map(A(i), Op2(i), Carry_temp(i-1), F_temp(i), Carry_temp(i));
+    Adder_output: my_adder port map(Op1(i), Op2(i), Carry_temp(i-1), F_temp(i), Carry_temp(i));
   end generate;
 
   --------------------------------FLAGS-----------------------------------------
 
   --carry flag
-  ALU_FLAGS(0) <= Carry_temp(WORDSIZE-1) when S = "0001" --ADD
-  else Carry_temp(WORDSIZE-1) when S = "0010" --SUB
-  else B(0) when S = "0110" --SHR
-  else B(0) when S = "1000" --RRC
-  else B(WORDSIZE-1) when S = "0101" --SHL
-  else B(WORDSIZE-1) when S = "0111" --RLC
+  C_flag <= Carry_temp(WORDSIZE-1) when S = OP_ADD
+  else Carry_temp(WORDSIZE-1) when S = OP_SUB
+  else Op1(0) when S = OP_SHR
+  else Op1(0) when S = OP_RRC
+  else Op1(WORDSIZE-1) when S = OP_SHL
+  else Op1(WORDSIZE-1) when S = OP_RLC
+  else '1' when S = OP_SETC 
   else '0';
+
+  C_flag_con <= '1' 
+  when S = OP_SETC or S = OP_CLRC or S = OP_SHL or S = OP_SHR or
+  S = OP_RLC or S = OP_RRC
+  else '0';
+
+  SetC <= C_flag_con and C_flag;
+  ClrC <= C_flag_con and not C_flag; 
   
   --zero flag
-  Z_flag <= nor_reduce(F_temp);
+  Z_flag <= '1' when S = OP_CLR else nor_reduce(F_temp);
+
+  Z_flag_con <= '1' when S = OP_CLR or S = OP_NOT or S = OP_INC or 
+  S = OP_DEC or S = OP_NEG or S = OP_ADD or S = OP_OR 
+  else '0';
+
+  SetZ <= Z_flag_con and Z_flag;
+  ClrZ <= Z_flag_con and not Z_flag; 
 
   --Negative (N) flag
   N_flag <= F_temp(WORDSIZE-1);
 
-  -----------------------------------------------------------------------
+  N_flag_con <= '1' when S = OP_NOT or S = OP_INC or S = OP_DEC or S = OP_NEG or
+  S = OP_ADD or S = OP_SUB or S = OP_AND or S = OP_OR
+  else '0';
 
-  F <= A when S = "0000" --MOV
-  else F_temp when S = "0001" --ADD
-  else F_temp when S = "0010" --SUB
-  else (A and B) when S = "0011" --AND
-  else (A or B) when S = "0100" --OR
-  else (B(WORDSIZE-2 downto 0) & '0') when S = "0101" --SHL
-  else ('0' & B(WORDSIZE-1 downto 1)) when S = "0110" --SHR
-  else (B(WORDSIZE-2 downto 0) & B(WORDSIZE-1)) when S = "0111" --RLC
-  else (B(0) & B(WORDSIZE-1 downto 1)) when S = "1000" --RRC
-  else A when S = "1001" --SETC
-  else A when S = "1010" --CLRC
-  else not A when S = "1011" --NOT
-  else F_temp when S = "1100" --INC
-  else F_temp when S = "1101" --DEC
-  else F_temp when S = "1110" --NEG
-  else (others => '0') when S = "1111" --CLR
+  SetN <= N_flag_con and N_flag;
+  ClrN <= N_flag_con and not N_flag; 
+  -----------------------------------------------------------------------------
+
+  F <= Op1 when S = OP_MOV 
+  else F_temp when S = OP_ADD 
+  else F_temp when S = OP_SUB 
+  else (Op1 and Op2) when S = OP_AND 
+  else (Op1 or Op2) when S = OP_OR 
+  else (Op1(WORDSIZE-2 downto 0) & '0') when S = OP_SHL 
+  else ('0' & Op1(WORDSIZE-1 downto 1)) when S = OP_SHR 
+  else (Op1(WORDSIZE-2 downto 0) & Op1(WORDSIZE-1)) when S = OP_RLC 
+  else (Op1(0) & Op1(WORDSIZE-1 downto 1)) when S = OP_RRC 
+  else Op1 when S = OP_SETC 
+  else Op1 when S = OP_CLRC 
+  else not Op1 when S = OP_NOT 
+  else F_temp when S = OP_INC 
+  else F_temp when S = OP_DEC 
+  else F_temp when S = OP_NEG 
+  else (others => '0') when S = OP_CLR 
   else (others => '0');
   
 end architecture alu_0;
