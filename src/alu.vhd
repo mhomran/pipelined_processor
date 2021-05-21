@@ -7,6 +7,7 @@ generic (WORDSIZE : integer := 16);
 port (                 	
     A, B : in std_logic_vector(WORDSIZE-1 downto 0); 
     S : in std_logic_vector(3 downto 0);
+    Cin : in std_logic;
     F : out std_logic_vector(WORDSIZE-1 downto 0);
     SetC, ClrC : out std_logic;
     SetZ, ClrZ : out std_logic;
@@ -17,7 +18,7 @@ end ALU;
 -- Architecture
 architecture alu_0 of alu is 
 
-component my_adder is
+component full_adder is
   port (
     a,b,cin : in  std_logic;
     s, cout : out std_logic );
@@ -67,9 +68,9 @@ begin
   Cin_temp <= '1' when S = OP_INC or S = OP_NEG or S = OP_SUB
   else '0'; 
   --generate the full adders
-  Adders_output_0: my_adder port map(Op1(0), Op2(0), Cin_temp, F_temp(0), Carry_temp(0));
+  Adders_output_0: full_adder port map(Op1(0), Op2(0), Cin_temp, F_temp(0), Carry_temp(0));
   adders: for i in 1 to WORDSIZE-1 generate
-    Adder_output: my_adder port map(Op1(i), Op2(i), Carry_temp(i-1), F_temp(i), Carry_temp(i));
+    Adder_output: full_adder port map(Op1(i), Op2(i), Carry_temp(i-1), F_temp(i), Carry_temp(i));
   end generate;
 
   --------------------------------FLAGS-----------------------------------------
@@ -85,8 +86,8 @@ begin
   else '0';
 
   C_flag_con <= '1' 
-  when S = OP_SETC or S = OP_CLRC or S = OP_SHL or S = OP_SHR or
-  S = OP_RLC or S = OP_RRC
+  when S = OP_ADD or S = OP_SUB or S = OP_SETC or S = OP_CLRC or S = OP_SHL or
+  S = OP_SHR or S = OP_RLC or S = OP_RRC
   else '0';
 
   SetC <= C_flag_con and C_flag;
@@ -96,8 +97,8 @@ begin
   Z_flag <= '1' when S = OP_CLR else nor_reduce(F_temp);
 
   Z_flag_con <= '1' when S = OP_CLR or S = OP_NOT or S = OP_INC or 
-  S = OP_DEC or S = OP_NEG or S = OP_ADD or S = OP_OR 
-  else '0';
+  S = OP_DEC or S = OP_NEG or S = OP_ADD or S = OP_SUB or S = OP_AND or
+  S = OP_OR else '0';
 
   SetZ <= Z_flag_con and Z_flag;
   ClrZ <= Z_flag_con and not Z_flag; 
@@ -120,8 +121,8 @@ begin
   else (Op1 or Op2) when S = OP_OR 
   else (Op1(WORDSIZE-2 downto 0) & '0') when S = OP_SHL 
   else ('0' & Op1(WORDSIZE-1 downto 1)) when S = OP_SHR 
-  else (Op1(WORDSIZE-2 downto 0) & Op1(WORDSIZE-1)) when S = OP_RLC 
-  else (Op1(0) & Op1(WORDSIZE-1 downto 1)) when S = OP_RRC 
+  else (Op1(WORDSIZE-2 downto 0) & Cin) when S = OP_RLC 
+  else (Cin & Op1(WORDSIZE-1 downto 1)) when S = OP_RRC 
   else Op1 when S = OP_SETC 
   else Op1 when S = OP_CLRC 
   else not Op1 when S = OP_NOT 
