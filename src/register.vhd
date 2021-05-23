@@ -1,24 +1,27 @@
-LIBRARY IEEE;
-USE IEEE.std_logic_1164.all;
+library ieee;
+use ieee.std_logic_1164.all;
 
-ENTITY reg IS
-GENERIC (WORDSIZE : integer := 32);
-		 PORT(
-			 	clk : IN std_logic; 
-				en : in std_logic;
-		 		d : IN std_logic_vector(WORDSIZE-1 DOWNTO 0);
-				q : OUT std_logic_vector(WORDSIZE-1 DOWNTO 0) := (others => '0')
-				);
-END reg;
+entity reg is
+generic (WORDSIZE : integer := 32);
+      port(
+        clk : in std_logic; 
+        rst : in std_logic; 
+        en : in std_logic;
+        d : in std_logic_vector(WORDSIZE-1 downto 0);
+        q : out std_logic_vector(WORDSIZE-1 downto 0)
+        );
+end reg;
 
-ARCHITECTURE reg_1 OF reg IS
-BEGIN
-	PROCESS(clk)
-	BEGIN
-		IF rising_edge(clk) and en = '1'  THEN     
-			q <= d;
-		END IF;
-	END PROCESS;
-END reg_1;
+architecture reg_1 of reg is
+begin
+  process(clk)
+  begin
+    if rst = '1' then
+      q <= (others => '0');
+    elsif rising_edge(clk) and en = '1' then     
+      q <= d;
+    end if;
+  end process;  
+end reg_1;
 
 
