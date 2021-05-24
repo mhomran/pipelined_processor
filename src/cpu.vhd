@@ -72,7 +72,7 @@ end component;
 constant CONTROL_WORD_SIZE : integer := 10;
 constant MemWrite_offset   : integer := CONTROL_WORD_SIZE - 1;
 constant MemRead_offset    : integer := CONTROL_WORD_SIZE - 2;
-constant ALU_offset        : integer := CONTROL_WORD_SIZE - 3;
+constant ALU_offset        : integer := CONTROL_WORD_SIZE - 6;
 constant IMM_offset        : integer := CONTROL_WORD_SIZE - 7;
 constant IO_offset         : integer := CONTROL_WORD_SIZE - 8;
 constant WBO_offset        : integer := CONTROL_WORD_SIZE - 9;
@@ -106,6 +106,8 @@ constant INSTRUCTION_SIZE   : integer := WORDSIZE*2;
 constant IMMEDIATE_VAL_SIZE : integer := WORDSIZE;
 constant ALU_SEL_SIZE       : integer := 4;
 constant MEM_STAGE_CS       : integer := 3;
+constant DST_OFFSET         : integer := WORDSIZE+REG_SIZE;
+constant SRC_OFFSET         : integer := WORDSIZE;
 
 --Intermediate registers
 signal IF_ID_input  : std_logic_vector(INSTRUCTION_SIZE-1 downto 0);
@@ -132,7 +134,27 @@ signal MEM_WB_en     : std_logic;
 signal WBO : std_logic;
 signal RegWrite : std_logic;
 
+--register file
+signal RegFileSrc_output : std_logic_vector(REG_SIZE-1 downto 0);
+signal RegFileDst_output : std_logic_vector(REG_SIZE-1 downto 0);
+signal RegFileWDst_input : std_logic_vector(REG_SIZE-1 downto 0);
+signal RegFileWDst       : std_logic_vector(REG_ADDR-1 downto 0);
+
 begin
+---------------------------------Register file---------------------------------
+RegFile: 
+register_file generic map(REG_SIZE, REG_ADDR, REG_NUM)
+port map(
+  clk, rst, 
+
+  IF_ID_output((REG_SIZE+SRC_OFFSET) downto SRC_OFFSET), 
+  IF_ID_output((REG_SIZE+DST_OFFSET) downto DST_OFFSET), 
+  RegFileSrc_output, 
+  RegFileDst_output, 
+
+  RegFileWDst_input, RegFileWDst, RegWrite
+  );
+
 ---------------------------------Intermediate registers------------------------
 IF_ID: 
 reg generic map (IF_ID_input'length) 
