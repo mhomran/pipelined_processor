@@ -105,6 +105,7 @@ end component;
 constant INSTRUCTION_SIZE   : integer := WORDSIZE*2;
 constant IMMEDIATE_VAL_SIZE : integer := WORDSIZE;
 constant ALU_SEL_SIZE       : integer := 4;
+constant MEM_STAGE_CS       : integer := 3;
 
 --Intermediate registers
 signal IF_ID_input  : std_logic_vector(INSTRUCTION_SIZE-1 downto 0);
@@ -117,10 +118,19 @@ signal ID_EX_output : std_logic_vector(ID_EX_input'length downto 0);
 signal ID_EX_en     : std_logic;
 
 signal EX_MEM_input  : std_logic_vector(
-((CONTROL_WORD_SIZE-ALU_SEL_SIZE + 2*REG_SIZE + REG_ADDR)-1) downto 0);
+((CONTROL_WORD_SIZE-ALU_SEL_SIZE-MEM_STAGE_CS + 2*REG_SIZE + REG_ADDR)-1)
+ downto 0);
 signal EX_MEM_output : std_logic_vector(ID_EX_input'length downto 0);
 signal EX_MEM_en     : std_logic;
 
+signal MEM_WB_input  : std_logic_vector(
+((CONTROL_WORD_SIZE-ALU_SEL_SIZE + 2*REG_SIZE + REG_ADDR)-1) downto 0);
+signal MEM_WB_output : std_logic_vector(ID_EX_input'length downto 0);
+signal MEM_WB_en     : std_logic;
+
+--control unit
+signal WBO : std_logic;
+signal RegWrite : std_logic;
 
 begin
 ---------------------------------Intermediate registers------------------------
@@ -135,6 +145,10 @@ port map(clk, rst, ID_EX_en, ID_EX_input, ID_EX_output);
 EX_MEM: 
 reg generic map (EX_MEM_input'length) 
 port map(clk, rst, EX_MEM_en, EX_MEM_input, EX_MEM_output);  
+
+MEM_WB: 
+reg generic map (MEM_WB_input'length) 
+port map(clk, rst, MEM_WB_en, MEM_WB_input, MEM_WB_output);  
 
 end architecture cpu_0;
 
