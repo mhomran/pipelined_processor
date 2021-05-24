@@ -159,9 +159,14 @@ port map(
   RegFileSrc_output, 
   RegFileDst_output, 
 
-  RegFileWDst_input, RegFileWDst, RegWrite
+  RegFileWDst_input, RegFileWDst,
+  MEM_WB_output(MEM_WB_output'length - 2)
   );
 
+RegFileWDst <= MEM_WB_output(REG_ADDR-1 downto 0);
+RegFileWDst_input <= MEM_WB_output(REG_SIZE+REG_ADDR-1 downto REG_ADDR)
+when MEM_WB_output(MEM_WB_output'length - 1) = '1'
+else MEM_WB_output(2*REG_SIZE+REG_ADDR-1 downto REG_SIZE+REG_ADDR);
 -----------------------------------RAM-----------------------------------------
 RAM_inst:
 ram generic map(WORDSIZE, RAM_ADDRESS_SIZE)
@@ -175,13 +180,25 @@ ID_EX:
 reg generic map (ID_EX_input'length) 
 port map(clk, rst, ID_EX_en, ID_EX_input, ID_EX_output);  
 
+ID_EX_input(REG_ADDR-1 downto 0) <= IF_ID_output((REG_SIZE+DST_OFFSET)
+ downto DST_OFFSET);
+
+ID_EX_input(REG_SIZE+REG_ADDR-1 downto REG_ADDR) <= RegFileSrc_output;
+ID_EX_input(REG_SIZE*2+REG_ADDR-1 downto REG_SIZE+REG_ADDR) <= RegFileDst_output;
+ID_EX_input(REG_SIZE*2+REG_ADDR+REG_SIZE-1 downto REG_SIZE*2+REG_ADDR) 
+<= RegFileDst_output;
+
 EX_MEM: 
 reg generic map (EX_MEM_input'length) 
 port map(clk, rst, EX_MEM_en, EX_MEM_input, EX_MEM_output);  
 
+EX_MEM_input(REG_ADDR-1 downto 0) <= ID_EX_output(REG_ADDR-1 downto 0);
+
 MEM_WB: 
 reg generic map (MEM_WB_input'length) 
 port map(clk, rst, MEM_WB_en, MEM_WB_input, MEM_WB_output);  
+
+MEM_WB_input(REG_ADDR-1 downto 0) <= EX_MEM_input(REG_ADDR-1 downto 0);
 
 end architecture cpu_0;
 

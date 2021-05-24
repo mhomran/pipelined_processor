@@ -48,17 +48,19 @@ component decAxB is
 end component;
 ----------------------------------Signals--------------------------------------
 
+signal inverted_clk : std_logic;
 type R_out is array (REG_NUM-1 downto 0) of std_logic_vector(REG_SIZE-1 DOWNTO 0);
 signal R_output : R_out;
 signal R_input_en : std_logic_vector(REG_NUM-1 DOWNTO 0);
 signal R_output_src_en : std_logic_vector(REG_NUM-1 DOWNTO 0);
 signal R_output_dst_en : std_logic_vector(REG_NUM-1 DOWNTO 0);
 
-
 begin
+  inverted_clk <= not clk;
+  
   R: for i in 0 to REG_NUM-1 generate
     R_reg: reg generic map (REG_SIZE) 
-    port map(clk, rst, R_input_en(i), data, R_output(i));  
+    port map(inverted_clk, rst, R_input_en(i), data, R_output(i));  
 
     src_op <= R_output(i) when R_output_src_en(i) = '1' else (others => 'Z');
     dst_op <= R_output(i) when R_output_dst_en(i) = '1' else (others => 'Z');
