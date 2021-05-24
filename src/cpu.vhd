@@ -101,6 +101,23 @@ component register_file is
   );  
 end component;
 
+--Status register
+component status_register is
+  generic (
+    REG_SIZE   : integer := 32
+  );
+  port(
+    clk        : in  std_logic;
+    rst        : in  std_logic;
+    C          : out std_logic;
+    SetC, ClrC : in  std_logic;
+    Z          : out std_logic;
+    SetZ, ClrZ : in  std_logic;
+    N          : out std_logic;
+    SetN, ClrN : in  std_logic
+  );  
+end component;
+
 ---------------------------------signals---------------------------------------
 --constants
 constant INSTRUCTION_SIZE   : integer := WORDSIZE*2;
@@ -147,6 +164,15 @@ signal RAM_address  : std_logic_vector(RAM_ADDRESS_SIZE-1 downto 0);
 signal RAM_input    : std_logic_vector(WORDSIZE*2-1 downto 0);
 signal RAM_output   : std_logic_vector(WORDSIZE*2-1 downto 0);
 
+--ALU
+signal ALU_op1        : std_logic_vector(WORDSIZE*2-1 downto 0);
+signal ALU_op2        : std_logic_vector(WORDSIZE*2-1 downto 0);
+signal ALU_output     : std_logic_vector(WORDSIZE*2-1 downto 0);
+signal ALU_sel        : std_logic_vector(ALU_SEL_SIZE-1 downto 0);
+signal C, SetC, ClrC  : std_logic;
+signal Z, SetZ, ClrZ  : std_logic;
+signal N, SetN, ClrN  : std_logic;
+
 begin
 ---------------------------------Register file---------------------------------
 RegFile: 
@@ -171,6 +197,14 @@ else MEM_WB_output(2*REG_SIZE+REG_ADDR-1 downto REG_SIZE+REG_ADDR);
 RAM_inst:
 ram generic map(WORDSIZE, RAM_ADDRESS_SIZE)
 port map(clk, MemWrite, RAM_address, RAM_input, RAM_output);
+-----------------------------------ALU-----------------------------------------
+ALU_inst:
+alu generic map(REG_SIZE)
+port map(ALU_op1, ALU_op2, ALU_sel, C, ALU_output, SetC, ClrC, SetZ, ClrZ,
+ SetN, ClrN);
+------------------------------Status register----------------------------------
+SR: 
+status_register port map(clk, rst, C, SetC, ClrC, Z, SetZ, ClrZ, N, SetN, ClrN);
 ---------------------------------Intermediate registers------------------------
 IF_ID: 
 reg generic map (IF_ID_input'length) 
@@ -199,6 +233,7 @@ reg generic map (MEM_WB_input'length)
 port map(clk, rst, MEM_WB_en, MEM_WB_input, MEM_WB_output);  
 
 MEM_WB_input(REG_ADDR-1 downto 0) <= EX_MEM_input(REG_ADDR-1 downto 0);
+
 
 end architecture cpu_0;
 

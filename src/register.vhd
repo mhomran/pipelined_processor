@@ -16,10 +16,12 @@ architecture reg_1 of reg is
 begin
   process(clk)
   begin
-    if rst = '1' then
-      q <= (others => '0');
-    elsif rising_edge(clk) and en = '1' then     
-      q <= d;
+    if rising_edge(clk) then
+      if rst = '1' then
+        q <= (others => '0');
+      elsif en = '1' then     
+        q <= d;
+      end if;
     end if;
   end process;  
 end reg_1;
