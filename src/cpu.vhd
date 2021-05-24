@@ -99,7 +99,18 @@ component register_file is
   );  
 end component;
 
+---------------------------------signals---------------------------------------
+constant INSTRUCTION_SIZE : integer := WORDSIZE*2;
+
+signal IF_ID_input  : std_logic_vector(INSTRUCTION_SIZE-1 downto 0);
+signal IF_ID_output : std_logic_vector(IF_ID_input'length downto 0);
+signal IF_ID_en     : std_logic;
+
 begin
+---------------------------------Intermediate registers------------------------
+IF_ID: 
+reg generic map (IF_ID_input'length) 
+port map(clk, rst, IF_ID_en, IF_ID_input, IF_ID_output);  
 
 end architecture cpu_0;
 
