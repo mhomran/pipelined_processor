@@ -45,16 +45,17 @@ end component;
 
 --ram
 component ram is
-	generic(
-		WORDSIZE : integer := 16;
-		ADDRESS_SIZE : integer := 16
-	);
-	port (
-		clk     : in  std_logic;
-		we      : in  std_logic;
-		address : in  std_logic_vector(ADDRESS_SIZE-1 downto 0);
-		datain  : in  std_logic_vector(WORDSIZE-1 downto 0);
-		dataout : out std_logic_vector(WORDSIZE-1 downto 0));
+  generic(
+    WORDSIZE : integer := 8;
+    ADDRESS_SIZE : integer := 6
+  );
+  port(
+    clk : in std_logic;
+    we  : in std_logic;
+    address : in  std_logic_vector(ADDRESS_SIZE-1 downto 0);
+    datain  : in  std_logic_vector(WORDSIZE-1 downto 0);
+    dataout : out std_logic_vector(WORDSIZE*2-1 downto 0)
+    );
 end component;
 
 --control unit
@@ -133,12 +134,18 @@ signal MEM_WB_en     : std_logic;
 --control unit
 signal WBO : std_logic;
 signal RegWrite : std_logic;
+signal MemWrite : std_logic;
 
 --register file
 signal RegFileSrc_output : std_logic_vector(REG_SIZE-1 downto 0);
 signal RegFileDst_output : std_logic_vector(REG_SIZE-1 downto 0);
 signal RegFileWDst_input : std_logic_vector(REG_SIZE-1 downto 0);
 signal RegFileWDst       : std_logic_vector(REG_ADDR-1 downto 0);
+
+--RAM
+signal RAM_address  : std_logic_vector(RAM_ADDRESS_SIZE-1 downto 0);
+signal RAM_input    : std_logic_vector(WORDSIZE*2-1 downto 0);
+signal RAM_output   : std_logic_vector(WORDSIZE*2-1 downto 0);
 
 begin
 ---------------------------------Register file---------------------------------
@@ -155,6 +162,10 @@ port map(
   RegFileWDst_input, RegFileWDst, RegWrite
   );
 
+-----------------------------------RAM-----------------------------------------
+RAM_inst:
+ram generic map(WORDSIZE, RAM_ADDRESS_SIZE)
+port map(clk, MemWrite, RAM_address, RAM_input, RAM_output);
 ---------------------------------Intermediate registers------------------------
 IF_ID: 
 reg generic map (IF_ID_input'length) 
