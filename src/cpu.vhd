@@ -4,8 +4,9 @@ use ieee.std_logic_1164.all;
 entity cpu is
   generic (
     WORDSIZE         : integer := 16;
-    REG_NUM          : integer := 10;
     REG_SIZE         : integer := 32;
+    REG_NUM          : integer := 10;
+    REG_ADDR         : integer := 4; --CEIL(LOG2(REG_NUM))
     RAM_ADDRESS_SIZE : integer := 11 --to get 2K words
   );
   port(
@@ -100,17 +101,29 @@ component register_file is
 end component;
 
 ---------------------------------signals---------------------------------------
-constant INSTRUCTION_SIZE : integer := WORDSIZE*2;
+--constants
+constant INSTRUCTION_SIZE   : integer := WORDSIZE*2;
+constant IMMEDIATE_VAL_SIZE : integer := WORDSIZE;
 
+--Intermediate registers
 signal IF_ID_input  : std_logic_vector(INSTRUCTION_SIZE-1 downto 0);
 signal IF_ID_output : std_logic_vector(IF_ID_input'length downto 0);
 signal IF_ID_en     : std_logic;
+
+signal ID_EX_input  : std_logic_vector(
+((CONTROL_WORD_SIZE + IMMEDIATE_VAL_SIZE + 2*REG_SIZE + REG_ADDR)-1) downto 0);
+signal ID_EX_output : std_logic_vector(ID_EX_input'length downto 0);
+signal ID_EX_en     : std_logic;
 
 begin
 ---------------------------------Intermediate registers------------------------
 IF_ID: 
 reg generic map (IF_ID_input'length) 
 port map(clk, rst, IF_ID_en, IF_ID_input, IF_ID_output);  
+
+ID_EX: 
+reg generic map (ID_EX_input'length) 
+port map(clk, rst, ID_EX_en, ID_EX_input, ID_EX_output);  
 
 end architecture cpu_0;
 
