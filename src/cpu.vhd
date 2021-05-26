@@ -126,6 +126,7 @@ constant ALU_SEL_SIZE       : integer := 4;
 constant MEM_STAGE_CS       : integer := 3;
 constant DST_OFFSET         : integer := WORDSIZE+REG_SIZE;
 constant SRC_OFFSET         : integer := WORDSIZE;
+constant EX_MEM_ALU_offset  : integer := REG_ADDR;
 
 --Intermediate registers
 signal IF_ID_input  : std_logic_vector(INSTRUCTION_SIZE-1 downto 0);
@@ -140,18 +141,19 @@ signal ID_EX_en     : std_logic;
 signal EX_MEM_input  : std_logic_vector(
 ((CONTROL_WORD_SIZE-ALU_SEL_SIZE-MEM_STAGE_CS + 2*REG_SIZE + REG_ADDR)-1)
  downto 0);
-signal EX_MEM_output : std_logic_vector(ID_EX_input'length downto 0);
+signal EX_MEM_output : std_logic_vector(EX_MEM_input'length downto 0);
 signal EX_MEM_en     : std_logic;
 
 signal MEM_WB_input  : std_logic_vector(
 ((CONTROL_WORD_SIZE-ALU_SEL_SIZE + 2*REG_SIZE + REG_ADDR)-1) downto 0);
-signal MEM_WB_output : std_logic_vector(ID_EX_input'length downto 0);
+signal MEM_WB_output : std_logic_vector(MEM_WB_input'length downto 0);
 signal MEM_WB_en     : std_logic;
 
 --control unit
-signal WBO : std_logic;
+signal WBO      : std_logic;
 signal RegWrite : std_logic;
 signal MemWrite : std_logic;
+signal MemRead  : std_logic;
 
 --register file
 signal RegFileSrc_output : std_logic_vector(REG_SIZE-1 downto 0);
@@ -163,6 +165,7 @@ signal RegFileWDst       : std_logic_vector(REG_ADDR-1 downto 0);
 signal RAM_address  : std_logic_vector(RAM_ADDRESS_SIZE-1 downto 0);
 signal RAM_input    : std_logic_vector(WORDSIZE*2-1 downto 0);
 signal RAM_output   : std_logic_vector(WORDSIZE*2-1 downto 0);
+signal MemUse       : std_logic;
 
 --ALU
 signal ALU_op1        : std_logic_vector(WORDSIZE*2-1 downto 0);
@@ -172,6 +175,11 @@ signal ALU_sel        : std_logic_vector(ALU_SEL_SIZE-1 downto 0);
 signal C, SetC, ClrC  : std_logic;
 signal Z, SetZ, ClrZ  : std_logic;
 signal N, SetN, ClrN  : std_logic;
+
+--PC
+signal PC_input_en    : std_logic;
+signal PC_input       : std_logic_vector(REG_SIZE-1 downto 0);
+signal PC_output      : std_logic_vector(REG_SIZE-1 downto 0);
 
 begin
 ---------------------------------Register file---------------------------------
@@ -193,10 +201,17 @@ RegFileWDst <= MEM_WB_output(REG_ADDR-1 downto 0);
 RegFileWDst_input <= MEM_WB_output(REG_SIZE+REG_ADDR-1 downto REG_ADDR)
 when MEM_WB_output(MEM_WB_output'length - 1) = '1'
 else MEM_WB_output(2*REG_SIZE+REG_ADDR-1 downto REG_SIZE+REG_ADDR);
+-----------------------------------PC------------------------------------------
+PC: reg generic map (REG_SIZE) 
+port map(clk, rst, PC_input_en, PC_input, PC_output);  
 -----------------------------------RAM-----------------------------------------
 RAM_inst:
 ram generic map(WORDSIZE, RAM_ADDRESS_SIZE)
 port map(clk, MemWrite, RAM_address, RAM_input, RAM_output);
+
+MemUse <= MemWrite or MemRead;
+RAM_input <= EX_MEM_output(EX_MEM_ALU_offset+REG_SIZE-1 downto 
+EX_MEM_ALU_offset) when MemUse = '1' else PC_output;
 -----------------------------------ALU-----------------------------------------
 ALU_inst:
 alu generic map(REG_SIZE)
