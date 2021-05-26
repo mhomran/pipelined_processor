@@ -302,7 +302,7 @@ port map(clk, MemWrite, RAM_address, RAM_input, RAM_output);
 MemUse <= MemWrite or MemRead;
 
 RAM_address <= EX_MEM_output(EX_MEM_ALU_OUTPUT_OFFSET+REG_SIZE-1 downto 
-EX_MEM_ALU_OUTPUT_OFFSET) when MemUse = '1' else PC_output;
+EX_MEM_ALU_OUTPUT_OFFSET) when MemUse = '1' else PC_output(RAM_ADDRESS_SIZE-1 downto 0);
 
 RAM_input <= EX_MEM_output(EX_MEM_DST_REG_OFFSET+REG_SIZE-1 downto 
 EX_MEM_DST_REG_OFFSET);
