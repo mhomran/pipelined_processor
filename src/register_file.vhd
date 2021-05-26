@@ -4,7 +4,7 @@ use ieee.std_logic_1164.all;
 entity register_file is
   generic (
     REG_SIZE   : integer := 32;
-    REG_ADDR : integer := 3; --CEIL(LOG2(REG_NUM))
+    REG_ADDR   : integer := 3; --CEIL(LOG2(REG_NUM))
     REG_NUM    : integer := 8
   );
   port(
@@ -39,11 +39,11 @@ end component;
 
 --decoder
 component decAxB is
-  generic (REG_ADDR: integer := 2);
+  generic (INPUT_SIZE: integer := 2);
   port(
       en : in std_logic; 
-      A  : in std_logic_vector(REG_ADDR-1 DOWNTO 0);
-      Y  : out std_logic_vector(2**REG_ADDR-1 DOWNTO 0)
+      A  : in std_logic_vector(INPUT_SIZE-1 downto 0);
+      Y  : out std_logic_vector(2**INPUT_SIZE-1 downto 0)
    );
 end component;
 ----------------------------------Signals--------------------------------------

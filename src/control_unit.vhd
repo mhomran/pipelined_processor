@@ -6,7 +6,7 @@ use ieee.math_real.all;
 use ieee.numeric_std.all;
 
 entity control_unit is
-  GENERIC (
+  generic (
     CONTROL_WORD_SIZE : integer := 10;
     OPCODE_SIZE : integer := 5
   );
