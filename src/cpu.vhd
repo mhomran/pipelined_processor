@@ -39,7 +39,7 @@ port (
     A, B       : in  std_logic_vector(WORDSIZE-1 downto 0); 
     S          : in  std_logic_vector(3 downto 0);
     Cin        : in  std_logic;
-    F          : out std_logic_vector(WORDSIZE-1 downto 0);
+    F          : inout std_logic_vector(WORDSIZE-1 downto 0);
     SetC, ClrC : out std_logic;
     SetZ, ClrZ : out std_logic;
     SetN, ClrN : out std_logic
@@ -319,7 +319,13 @@ ALU_inst:
 alu generic map(REG_SIZE)
 port map(ALU_op1, ALU_op2, ALU_sel, C, ALU_output, SetC, ClrC, SetZ, ClrZ,
  SetN, ClrN);
- --TODO: connect the operands
+
+ ALU_op1 <= ID_EX_output(ID_EX_SRC_REG_OFFSET+REG_SIZE-1 downto ID_EX_SRC_REG_OFFSET)
+ when ID_EX_output(ID_EX_IMM_OFFSET) = '0' else ID_EX_output(ID_EX_IMM_VAL_OFFSET+REG_SIZE-1 downto ID_EX_IMM_VAL_OFFSET);
+ ALU_op2 <= ID_EX_output(ID_EX_DST_REG_OFFSET+REG_SIZE-1 downto ID_EX_DST_REG_OFFSET);
+ ALU_sel <= ID_EX_output(ID_EX_ALU_OFFSET+ALU_SEL_SIZE-1 downto ID_EX_ALU_OFFSET);
+
+ 
 ------------------------------Status register----------------------------------
 SR: 
 status_register port map(clk, rst, C, SetC, ClrC, Z, SetZ, ClrZ, N, SetN, ClrN);
@@ -368,6 +374,8 @@ EX_MEM:
 reg generic map (EX_MEM_input'length) 
 port map(clk, rst, EX_MEM_en, EX_MEM_input, EX_MEM_output);  
 
+EX_MEM_en <= '1';
+
 EX_MEM_input(EX_MEM_RDST_OFFSET+REG_ADDR-1 downto EX_MEM_RDST_OFFSET) <=
 ID_EX_output(ID_EX_RDST_OFFSET+ REG_ADDR-1 downto ID_EX_RDST_OFFSET);
 
@@ -387,6 +395,8 @@ EX_MEM_input(EX_MEM_MEMWRITE_OFFSET) <= ID_EX_output(ID_EX_MEMWRITE_OFFSET);
 MEM_WB: 
 reg generic map (MEM_WB_input'length) 
 port map(clk, rst, MEM_WB_en, MEM_WB_input, MEM_WB_output);  
+
+MEM_WB_en <= '1';
 
 MEM_WB_input(MEM_WB_RDST_OFFSET+REG_ADDR-1 downto MEM_WB_RDST_OFFSET) <= 
 EX_MEM_output(EX_MEM_RDST_OFFSET+REG_ADDR-1 downto EX_MEM_RDST_OFFSET);
