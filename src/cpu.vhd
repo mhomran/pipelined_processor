@@ -10,8 +10,10 @@ entity cpu is
     RAM_ADDRESS_SIZE : integer := 11 --to get 2K words
   );
   port(
-    clk : in std_logic;
-    rst : in std_logic
+    clk         : in std_logic;
+    rst         : in std_logic;
+    input_port  : in std_logic_vector(REG_SIZE-1 downto 0);
+    output_port : out std_logic_vector(REG_SIZE-1 downto 0)
   );  
 end cpu;
 
@@ -120,13 +122,27 @@ end component;
 
 ---------------------------------signals---------------------------------------
 --constants
-constant INSTRUCTION_SIZE   : integer := WORDSIZE*2;
-constant IMMEDIATE_VAL_SIZE : integer := WORDSIZE;
-constant ALU_SEL_SIZE       : integer := 4;
-constant MEM_STAGE_CS       : integer := 3;
-constant DST_OFFSET         : integer := WORDSIZE+REG_SIZE;
-constant SRC_OFFSET         : integer := WORDSIZE;
-constant EX_MEM_ALU_offset  : integer := REG_ADDR;
+constant INSTRUCTION_SIZE         : integer := WORDSIZE*2;
+constant IMMEDIATE_VAL_SIZE       : integer := WORDSIZE;
+constant ALU_SEL_SIZE             : integer := 4;
+constant MEM_STAGE_CS             : integer := 3;
+constant DST_OFFSET               : integer := WORDSIZE+REG_SIZE;
+constant SRC_OFFSET               : integer := WORDSIZE;
+
+constant EX_MEM_RDST_OFFSET       : integer := 0;
+constant EX_MEM_DST_REG_OFFSET    : integer := EX_MEM_RDST_OFFSET+REG_ADDR;
+constant EX_MEM_ALU_OUTPUT_OFFSET : integer := EX_MEM_DST_REG_OFFSET+REG_SIZE;
+constant EX_MEM_REG_WRITE_OFFSET  : integer := EX_MEM_ALU_OUTPUT_OFFSET+REG_SIZE;
+constant EX_MEM_WBO_OFFSET        : integer := EX_MEM_REG_WRITE_OFFSET+1;
+constant EX_MEM_IO_OFFSET         : integer := EX_MEM_WBO_OFFSET+1;
+constant EX_MEM_MEM_READ_OFFSET   : integer := EX_MEM_IO_OFFSET+1;
+constant EX_MEM_MEM_WRITE_OFFSET  : integer := EX_MEM_MEM_READ_OFFSET+1;
+
+constant MEM_WB_RDST_OFFSET       : integer := 0;
+constant MEM_WB_ALU_OUTPUT_OFFSET : integer := MEM_WB_RDST_OFFSET+REG_ADDR;
+constant MEM_WB_MEM_OUTPUT_OFFSET : integer := MEM_WB_ALU_OUTPUT_OFFSET+REG_SIZE;
+constant MEM_WB_REGWRITE_OFFSET   : integer := MEM_WB_MEM_OUTPUT_OFFSET+1;
+constant MEM_WB_WBO_OFFSET        : integer := MEM_WB_REGWRITE_OFFSET+1;
 
 --Intermediate registers
 signal IF_ID_input  : std_logic_vector(INSTRUCTION_SIZE-1 downto 0);
@@ -181,6 +197,11 @@ signal PC_input_en    : std_logic;
 signal PC_input       : std_logic_vector(REG_SIZE-1 downto 0);
 signal PC_output      : std_logic_vector(REG_SIZE-1 downto 0);
 
+--IO registers
+signal IN_PORT_output : std_logic_vector(REG_SIZE-1 downto 0);
+signal OUT_PORT_input : std_logic_vector(REG_SIZE-1 downto 0);
+
+
 begin
 ---------------------------------Register file---------------------------------
 RegFile: 
@@ -210,8 +231,16 @@ ram generic map(WORDSIZE, RAM_ADDRESS_SIZE)
 port map(clk, MemWrite, RAM_address, RAM_input, RAM_output);
 
 MemUse <= MemWrite or MemRead;
-RAM_input <= EX_MEM_output(EX_MEM_ALU_offset+REG_SIZE-1 downto 
-EX_MEM_ALU_offset) when MemUse = '1' else PC_output;
+RAM_input <= EX_MEM_output(EX_MEM_ALU_OUTPUT_OFFSET+REG_SIZE-1 downto 
+EX_MEM_ALU_OUTPUT_OFFSET) when MemUse = '1' else PC_output;
+-----------------------------------IO registers--------------------------------
+
+IN_PORT: reg generic map (REG_SIZE) 
+port map(clk, rst, '1', input_port, IN_PORT_output); 
+
+OUT_PORT: reg generic map (REG_SIZE) 
+port map(clk, rst, EX_MEM_output(EX_MEM_IO_OFFSET), OUT_PORT_input, output_port); 
+
 -----------------------------------ALU-----------------------------------------
 ALU_inst:
 alu generic map(REG_SIZE)
@@ -247,8 +276,12 @@ MEM_WB:
 reg generic map (MEM_WB_input'length) 
 port map(clk, rst, MEM_WB_en, MEM_WB_input, MEM_WB_output);  
 
-MEM_WB_input(REG_ADDR-1 downto 0) <= EX_MEM_input(REG_ADDR-1 downto 0);
+MEM_WB_input(MEM_WB_RDST_OFFSET+REG_ADDR-1 downto MEM_WB_RDST_OFFSET) <= 
+EX_MEM_output(EX_MEM_RDST_OFFSET+REG_ADDR-1 downto EX_MEM_RDST_OFFSET);
 
+MEM_WB_input(MEM_WB_MEM_OUTPUT_OFFSET+REG_SIZE-1 downto MEM_WB_MEM_OUTPUT_OFFSET) <= 
+RAM_output when EX_MEM_output(EX_MEM_IO_OFFSET) = '0'
+else IN_PORT_output;
 
 end architecture cpu_0;
 
