@@ -24,7 +24,7 @@ architecture ram_0 OF ram is
   begin
     process(clk) is
       begin
-        if rising_edge(clk) THEN  
+        if falling_edge(clk) THEN  
           if we = '1' THEN
             --big endian
             ram(to_integer(unsigned(address))) <= datain(WORDSIZE*2-1 downto WORDSIZE);

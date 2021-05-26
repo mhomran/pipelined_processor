@@ -164,14 +164,14 @@ constant MEM_WB_REGWRITE_OFFSET   : integer := MEM_WB_MEM_OUTPUT_OFFSET+1;
 constant MEM_WB_WBO_OFFSET        : integer := MEM_WB_REGWRITE_OFFSET+1;
 
 --Intermediate registers
-signal IF_ID_input  : std_logic_vector(INSTRUCTION_SIZE-1 downto 0);
-signal IF_ID_output : std_logic_vector(IF_ID_input'length downto 0);
-signal IF_ID_en     : std_logic;
+signal IF_ID_input   : std_logic_vector(INSTRUCTION_SIZE-1 downto 0);
+signal IF_ID_output  : std_logic_vector(IF_ID_input'length downto 0);
+signal IF_ID_en      : std_logic;
 
-signal ID_EX_input  : std_logic_vector(
+signal ID_EX_input   : std_logic_vector(
 ((CONTROL_WORD_SIZE + IMMEDIATE_VAL_SIZE + 2*REG_SIZE + REG_ADDR)-1) downto 0);
-signal ID_EX_output : std_logic_vector(ID_EX_input'length downto 0);
-signal ID_EX_en     : std_logic;
+signal ID_EX_output  : std_logic_vector(ID_EX_input'length downto 0);
+signal ID_EX_en      : std_logic;
 
 signal EX_MEM_input  : std_logic_vector(
 ((CONTROL_WORD_SIZE-ALU_SEL_SIZE-MEM_STAGE_CS + 2*REG_SIZE + REG_ADDR)-1)
@@ -251,6 +251,10 @@ else MEM_WB_output(2*REG_SIZE+REG_ADDR-1 downto REG_SIZE+REG_ADDR);
 -----------------------------------PC------------------------------------------
 PC: reg generic map (REG_SIZE) 
 port map(clk, rst, PC_input_en, PC_input, PC_output);  
+
+PC_input_en <= not MemUse; --TODO: chnage when forwarding implemented
+--TODO: make a unit to figure the instruction type (1 or 2 Words)
+--TODO: PC_input <= 1 + PC_output when one_word else 2 + output
 -----------------------------------RAM-----------------------------------------
 RAM_inst:
 ram generic map(WORDSIZE, RAM_ADDRESS_SIZE)
@@ -291,6 +295,8 @@ port map(clk, rst, IF_ID_en, IF_ID_input, IF_ID_output);
 
 IF_ID_input <= RAM_output when MemUse = '0' else CW_NOP;
 
+IF_ID_en <= '1'; --TODO: chnage when forwarding implemented
+
 ID_EX: 
 reg generic map (ID_EX_input'length) 
 port map(clk, rst, ID_EX_en, ID_EX_input, ID_EX_output);  
@@ -314,7 +320,7 @@ IMM_VAL_extended(2*WORDSIZE-1 downto WORDSIZE) <= (others => '1') when
 IF_ID_output(WORDSIZE+IF_ID_IMM_OFFSET-1) = '1' else (others => '0');
 
 ID_EX_input(ID_EX_CTRL_SIG_OFFSET+WORDSIZE-1 downto ID_EX_CTRL_SIG_OFFSET) <=
-control_unit_output;
+control_unit_output; --TODO: chnage when forwarding implemented
 
 EX_MEM: 
 reg generic map (EX_MEM_input'length) 
