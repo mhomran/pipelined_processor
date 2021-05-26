@@ -143,8 +143,8 @@ constant IF_ID_IMM_OFFSET         : integer := 0;
 constant IF_ID_SRC_OFFSET         : integer := IF_ID_IMM_OFFSET+WORDSIZE;
 constant IF_ID_DST_OFFSET         : integer := IF_ID_SRC_OFFSET+REG_ADDR;
 constant IF_ID_OPCODE_OFFSET      : integer := IF_ID_DST_OFFSET+REG_ADDR;
-constant CW_NOP                   : std_logic_vector(CONTROL_WORD_SIZE-1
- downto 0) :=  "0000000000";
+constant CW_NOP                   : std_logic_vector(INSTRUCTION_SIZE-1
+ downto 0) :=  "00000000000000000000000000000000";
 
 constant ID_EX_RDST_OFFSET        : integer := 0;
 constant ID_EX_DST_REG_OFFSET     : integer := ID_EX_RDST_OFFSET+REG_ADDR;
@@ -247,6 +247,8 @@ signal IMM_VAL_extended : std_logic_vector(REG_SIZE-1 downto 0);
 --control unit
 signal control_unit_output : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0);
 
+--load use case
+signal EX_MEM_Use_Memory   : std_logic;
 
 
 begin
@@ -331,7 +333,9 @@ IF_ID:
 reg generic map (IF_ID_input'length) 
 port map(clk, rst, IF_ID_en, IF_ID_input, IF_ID_output);  
 
-IF_ID_input <= RAM_output when MemUse = '0' else CW_NOP;
+-- CW_NOP is wrong size !!
+EX_MEM_Use_Memory <= EX_MEM_output(EX_MEM_MEMREAD_OFFSET) or EX_MEM_output(EX_MEM_MEMWRITE_OFFSET);
+IF_ID_input <= RAM_output when EX_MEM_Use_Memory = '0' else CW_NOP;
 
 IF_ID_en <= '1'; --TODO: chnage when forwarding implemented
 
