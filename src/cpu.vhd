@@ -121,6 +121,18 @@ component status_register is
   );  
 end component;
 
+-- Ripple Adder
+component ripple_adder is
+  generic (
+    SIZE : integer := 32
+    );
+	port (
+    op1, op2 : in std_logic_vector(SIZE-1 downto 0);
+    cin : in std_logic;
+    result : out  std_logic_vector(SIZE-1 downto 0);
+    cout : out std_logic
+    );
+end component;
 ---------------------------------signals---------------------------------------
 --constants
 constant INSTRUCTION_SIZE         : integer := REG_SIZE;
@@ -255,10 +267,12 @@ MEM_WB_ALU_OUTPUT_OFFSET);
 -----------------------------------PC------------------------------------------
 PC: reg generic map (REG_SIZE) 
 port map(clk, rst, PC_input_en, PC_input, PC_output);  
-
-PC_input_en <= not MemUse; 
 --TODO: chnage when forwarding implemented
 --TODO: make a unit to figure the instruction type (1 or 2 Words)
+
+-- LDM | IADD | SHL | SHR
+
+
 --TODO: PC_input <= 1 + PC_output when one_word else 2 + output
 -----------------------------------RAM-----------------------------------------
 RAM_inst:
