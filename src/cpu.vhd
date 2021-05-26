@@ -1,5 +1,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
 entity cpu is
   generic (
@@ -174,6 +175,12 @@ constant MEM_WB_MEM_OUTPUT_OFFSET : integer := MEM_WB_ALU_OUTPUT_OFFSET+REG_SIZE
 constant MEM_WB_REGWRITE_OFFSET   : integer := MEM_WB_MEM_OUTPUT_OFFSET+1;
 constant MEM_WB_WBO_OFFSET        : integer := MEM_WB_REGWRITE_OFFSET+1;
 
+--constant OPCODE_SIZE  : integer := 5; 
+constant OPCODE_LDM   : std_logic_vector(OPCODE_SIZE-1 downto 0) := "10100"; 
+constant OPCODE_IADD  : std_logic_vector(OPCODE_SIZE-1 downto 0) := "00101";
+constant OPCODE_SHL   : std_logic_vector(OPCODE_SIZE-1 downto 0) := "00110";
+constant OPCODE_SHR   : std_logic_vector(OPCODE_SIZE-1 downto 0) := "00111";
+
 --Intermediate registers
 signal IF_ID_input   : std_logic_vector(INSTRUCTION_SIZE-1 downto 0);
 signal IF_ID_output  : std_logic_vector(INSTRUCTION_SIZE-1 downto 0);
@@ -226,6 +233,9 @@ signal N, SetN, ClrN  : std_logic;
 signal PC_input_en    : std_logic;
 signal PC_input       : std_logic_vector(REG_SIZE-1 downto 0);
 signal PC_output      : std_logic_vector(REG_SIZE-1 downto 0);
+signal is_imm_instruction : std_logic;
+signal PC_increment   : std_logic_vector(REG_SIZE-1 downto 0);
+signal PC_carry       : std_logic;
 
 --IO registers
 signal IN_PORT_output : std_logic_vector(REG_SIZE-1 downto 0);
@@ -268,12 +278,20 @@ MEM_WB_ALU_OUTPUT_OFFSET);
 PC: reg generic map (REG_SIZE) 
 port map(clk, rst, PC_input_en, PC_input, PC_output);  
 --TODO: chnage when forwarding implemented
+
 --TODO: make a unit to figure the instruction type (1 or 2 Words)
-
--- LDM | IADD | SHL | SHR
-
+is_imm_instruction <= '1' 
+when (PC_output = OPCODE_LDM or PC_output = OPCODE_IADD or PC_output = OPCODE_SHL or PC_output = OPCODE_SHR )
+else '0';
 
 --TODO: PC_input <= 1 + PC_output when one_word else 2 + output
+PC_increment <= std_logic_vector(to_unsigned(2, REG_SIZE)) when is_imm_instruction='1'
+else std_logic_vector(to_unsigned(1, REG_SIZE));
+
+ADDER_inst:
+ripple_adder generic map(REG_SIZE)
+port map(PC_output, PC_increment, '0', PC_input, PC_carry);
+
 -----------------------------------RAM-----------------------------------------
 RAM_inst:
 ram generic map(WORDSIZE, RAM_ADDRESS_SIZE)
