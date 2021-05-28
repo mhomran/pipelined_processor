@@ -8,7 +8,7 @@ port (
     A, B : in std_logic_vector(WORDSIZE-1 downto 0); 
     S : in std_logic_vector(3 downto 0);
     Cin : in std_logic;
-    F : out std_logic_vector(WORDSIZE-1 downto 0);
+    F : inout std_logic_vector(WORDSIZE-1 downto 0);
     SetC, ClrC : out std_logic;
     SetZ, ClrZ : out std_logic;
     SetN, ClrN : out std_logic
@@ -94,7 +94,7 @@ begin
   ClrC <= C_flag_con and not C_flag; 
   
   --zero flag
-  Z_flag <= '1' when S = OP_CLR else nor_reduce(F_temp);
+  Z_flag <= '1' when S = OP_CLR else nor_reduce(F);
 
   Z_flag_con <= '1' when S = OP_CLR or S = OP_NOT or S = OP_INC or 
   S = OP_DEC or S = OP_NEG or S = OP_ADD or S = OP_SUB or S = OP_AND or
@@ -104,7 +104,7 @@ begin
   ClrZ <= Z_flag_con and not Z_flag; 
 
   --Negative (N) flag
-  N_flag <= F_temp(WORDSIZE-1);
+  N_flag <= F(WORDSIZE-1);
 
   N_flag_con <= '1' when S = OP_NOT or S = OP_INC or S = OP_DEC or S = OP_NEG or
   S = OP_ADD or S = OP_SUB or S = OP_AND or S = OP_OR
