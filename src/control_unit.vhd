@@ -18,7 +18,7 @@ end control_unit;
 
 architecture control_unit_0 of control_unit is
   --OP codes
-  constant OC_MOV  : std_logic_vector(OPCODE_SIZE-1 downto 0) := "00000";
+  constant OC_NOP  : std_logic_vector(OPCODE_SIZE-1 downto 0) := "00000";
   constant OC_ADD  : std_logic_vector(OPCODE_SIZE-1 downto 0) := "00001";
   constant OC_SUB  : std_logic_vector(OPCODE_SIZE-1 downto 0) := "00010";
   constant OC_AND  : std_logic_vector(OPCODE_SIZE-1 downto 0) := "00011";
@@ -28,7 +28,7 @@ architecture control_unit_0 of control_unit is
   constant OC_SHR  : std_logic_vector(OPCODE_SIZE-1 downto 0) := "00111";
   constant OC_RLC  : std_logic_vector(OPCODE_SIZE-1 downto 0) := "01000";
   constant OC_RRC  : std_logic_vector(OPCODE_SIZE-1 downto 0) := "01001";
-  constant OC_NOP  : std_logic_vector(OPCODE_SIZE-1 downto 0) := "01010";
+  constant OC_MOV  : std_logic_vector(OPCODE_SIZE-1 downto 0) := "01010";
   constant OC_SETC : std_logic_vector(OPCODE_SIZE-1 downto 0) := "01011";
   constant OC_CLRC : std_logic_vector(OPCODE_SIZE-1 downto 0) := "01100";
   constant OC_CLR  : std_logic_vector(OPCODE_SIZE-1 downto 0) := "01101";
@@ -43,7 +43,7 @@ architecture control_unit_0 of control_unit is
   constant OC_STD  : std_logic_vector(OPCODE_SIZE-1 downto 0) := "10110";
 
   --Control words
-  constant CW_MOV  : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "0000000001";
+  constant CW_NOP  : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "0000000000";
   constant CW_ADD  : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "0000010001";
   constant CW_SUB  : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "0000100001";
   constant CW_AND  : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "0000110001";
@@ -53,7 +53,7 @@ architecture control_unit_0 of control_unit is
   constant CW_SHR  : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "0001101001";
   constant CW_RLC  : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "0001110001";
   constant CW_RRC  : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "0010000001";
-  constant CW_NOP  : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "0000000000";
+  constant CW_MOV  : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "0000000001";
   constant CW_SETC : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "0010010000";
   constant CW_CLRC : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "0010100000";
   constant CW_CLR  : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "0011110001";
