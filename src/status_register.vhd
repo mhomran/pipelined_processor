@@ -29,20 +29,18 @@ component flip_flop is
     );
 end component;
 
-signal inverted_clk : std_logic;
 signal rstC         : std_logic;
 signal rstZ         : std_logic;
 signal rstN         : std_logic;
 
 begin
 
-inverted_clk <= not clk;
 rstC         <= rst or ClrC;
 rstZ         <= rst or ClrZ;
 rstN         <= rst or ClrN;
 
-C_ff: flip_flop port map(inverted_clk, rstC, SetC, C);  
-Z_ff: flip_flop port map(inverted_clk, rstZ, SetZ, Z);  
-N_ff: flip_flop port map(inverted_clk, rstN, SetN, N);  
+C_ff: flip_flop port map(clk, rstC, SetC, C);  
+Z_ff: flip_flop port map(clk, rstZ, SetZ, Z);  
+N_ff: flip_flop port map(clk, rstN, SetN, N);  
 
 end architecture status_register_0;
