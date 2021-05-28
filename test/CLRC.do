@@ -1,5 +1,7 @@
 vsim -gui work.cpu
+# SETC
 mem load -filltype value -filldata 0000101100000000 -fillradix symbolic /cpu/RAM_inst/ram(0)
+# CLRC
 mem load -filltype value -filldata 0000110000000000 -fillradix symbolic /cpu/RAM_inst/ram(1)
 mem load -filltype value -filldata 0000000000000000 -fillradix symbolic /cpu/RAM_inst/ram(2)
 mem load -filltype value -filldata 0000000000000000 -fillradix symbolic /cpu/RAM_inst/ram(3)
