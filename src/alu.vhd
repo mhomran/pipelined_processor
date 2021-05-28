@@ -1,6 +1,7 @@
 library ieee;                                	
 use ieee.std_logic_1164.all;  
 use ieee.std_logic_misc.all;  
+use ieee.numeric_std.all;
 
 entity alu is 
 generic (WORDSIZE : integer := 16);
@@ -120,8 +121,8 @@ begin
   else F_temp when S = OP_SUB 
   else (A and B) when S = OP_AND 
   else (A or B) when S = OP_OR 
-  else (A(WORDSIZE-2 downto 0) & '0') when S = OP_SHL 
-  else ('0' & A(WORDSIZE-1 downto 1)) when S = OP_SHR 
+  else std_logic_vector(shift_left(unsigned(B), to_integer(unsigned(A(4 downto 0))))) when S = OP_SHL 
+  else std_logic_vector(shift_right(unsigned(B), to_integer(unsigned(A(4 downto 0))))) when S = OP_SHR 
   else (A(WORDSIZE-2 downto 0) & Cin) when S = OP_RLC 
   else (Cin & A(WORDSIZE-1 downto 1)) when S = OP_RRC 
   else not A when S = OP_NOT 
