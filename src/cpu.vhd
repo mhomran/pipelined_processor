@@ -175,10 +175,12 @@ constant MEM_WB_REGWRITE_OFFSET   : integer := MEM_WB_MEM_OUTPUT_OFFSET+REG_SIZE
 constant MEM_WB_WBO_OFFSET        : integer := MEM_WB_REGWRITE_OFFSET+1;
 
 --constant OPCODE_SIZE  : integer := 5; 
-constant OPCODE_LDM   : std_logic_vector(OPCODE_SIZE-1 downto 0) := "10100"; 
-constant OPCODE_IADD  : std_logic_vector(OPCODE_SIZE-1 downto 0) := "00101";
-constant OPCODE_SHL   : std_logic_vector(OPCODE_SIZE-1 downto 0) := "00110";
-constant OPCODE_SHR   : std_logic_vector(OPCODE_SIZE-1 downto 0) := "00111";
+constant OC_LDD  : std_logic_vector(OPCODE_SIZE-1 downto 0) := "10101";
+constant OC_STD  : std_logic_vector(OPCODE_SIZE-1 downto 0) := "10110";
+constant OC_LDM  : std_logic_vector(OPCODE_SIZE-1 downto 0) := "10100"; 
+constant OC_IADD : std_logic_vector(OPCODE_SIZE-1 downto 0) := "00101";
+constant OC_SHL  : std_logic_vector(OPCODE_SIZE-1 downto 0) := "00110";
+constant OC_SHR  : std_logic_vector(OPCODE_SIZE-1 downto 0) := "00111";
 
 --Intermediate registers
 signal IF_ID_input   : std_logic_vector(INSTRUCTION_SIZE-1 downto 0);
@@ -283,11 +285,18 @@ PC_input_en <= '1';
 
 --TODO: make a unit to figure the instruction type (1 or 2 Words)
 is_imm_instruction <= '1' 
-when (PC_output = OPCODE_LDM or PC_output = OPCODE_IADD or PC_output = OPCODE_SHL or PC_output = OPCODE_SHR )
+when 
+RAM_output(IF_ID_OPCODE_OFFSET+OPCODE_SIZE-1 downto IF_ID_OPCODE_OFFSET) = OC_LDD or
+RAM_output(IF_ID_OPCODE_OFFSET+OPCODE_SIZE-1 downto IF_ID_OPCODE_OFFSET) = OC_STD or
+RAM_output(IF_ID_OPCODE_OFFSET+OPCODE_SIZE-1 downto IF_ID_OPCODE_OFFSET) = OC_LDM or
+RAM_output(IF_ID_OPCODE_OFFSET+OPCODE_SIZE-1 downto IF_ID_OPCODE_OFFSET) = OC_IADD or
+RAM_output(IF_ID_OPCODE_OFFSET+OPCODE_SIZE-1 downto IF_ID_OPCODE_OFFSET) = OC_SHL or
+RAM_output(IF_ID_OPCODE_OFFSET+OPCODE_SIZE-1 downto IF_ID_OPCODE_OFFSET) = OC_SHR 
 else '0';
 
 --TODO: PC_input <= 1 + PC_output when one_word else 2 + output
-PC_increment <= std_logic_vector(to_unsigned(2, REG_SIZE)) when is_imm_instruction='1'
+PC_increment <= std_logic_vector(to_unsigned(2, REG_SIZE)) 
+when is_imm_instruction = '1'
 else std_logic_vector(to_unsigned(1, REG_SIZE));
 
 ADDER_inst:
@@ -324,7 +333,8 @@ port map(ALU_op1, ALU_op2, ALU_sel, C, ALU_output, SetC, ClrC, SetZ, ClrZ,
 SetN, ClrN);
 
 ALU_op1 <= ID_EX_output(ID_EX_SRC_REG_OFFSET+REG_SIZE-1 downto ID_EX_SRC_REG_OFFSET)
-when ID_EX_output(ID_EX_IMM_OFFSET) = '0' else ID_EX_output(ID_EX_IMM_VAL_OFFSET+REG_SIZE-1 downto ID_EX_IMM_VAL_OFFSET);
+when ID_EX_output(ID_EX_IMM_OFFSET) = '0' 
+else ID_EX_output(ID_EX_IMM_VAL_OFFSET+REG_SIZE-1 downto ID_EX_IMM_VAL_OFFSET);
 ALU_op2 <= ID_EX_output(ID_EX_DST_REG_OFFSET+REG_SIZE-1 downto ID_EX_DST_REG_OFFSET);
 ALU_sel <= ID_EX_output(ID_EX_ALU_OFFSET+ALU_SEL_SIZE-1 downto ID_EX_ALU_OFFSET);
 
