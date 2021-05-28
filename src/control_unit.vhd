@@ -63,7 +63,7 @@ architecture control_unit_0 of control_unit is
   constant CW_NEG  : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "0011100001";
   constant CW_OUT  : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "0000000100";
   constant CW_IN   : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "0100000111";
-  constant CW_LDM  : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "0000011001";
+  constant CW_LDM  : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "0000001001";
   constant CW_LDD  : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "0100010011";
   constant CW_STD  : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "1000010000";
 
