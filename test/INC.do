@@ -1,5 +1,5 @@
 vsim -gui work.cpu
-# NOT
+# INC
 mem load -filltype value -filldata 0000111100000000 -fillradix symbolic /cpu/RAM_inst/ram(0)
 mem load -filltype value -filldata 0000000000000000 -fillradix symbolic /cpu/RAM_inst/ram(1)
 mem load -filltype value -filldata 0000000000000000 -fillradix symbolic /cpu/RAM_inst/ram(2)
