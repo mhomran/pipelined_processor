@@ -37,7 +37,7 @@ component alu is
 generic (WORDSIZE : integer := 16);
 port (                 	
     A, B       : in  std_logic_vector(WORDSIZE-1 downto 0); 
-    S          : in  std_logic_vector(3 downto 0);
+    S          : in  std_logic_vector(4 downto 0);
     Cin        : in  std_logic;
     F          : inout std_logic_vector(WORDSIZE-1 downto 0);
     SetC, ClrC : out std_logic;
@@ -74,7 +74,7 @@ component control_unit is
 end component;
 
 constant OPCODE_SIZE       : integer := 5;
-constant CONTROL_WORD_SIZE : integer := 10;
+constant CONTROL_WORD_SIZE : integer := 11;
 constant Write_offset   : integer := CONTROL_WORD_SIZE - 1;
 constant Read_offset    : integer := CONTROL_WORD_SIZE - 2;
 constant ALU_offset        : integer := CONTROL_WORD_SIZE - 6;
@@ -138,7 +138,7 @@ end component;
 --constants
 constant INSTRUCTION_SIZE         : integer := REG_SIZE;
 constant IMMEDIATE_VAL_SIZE       : integer := REG_SIZE;
-constant ALU_SEL_SIZE             : integer := 4;
+constant ALU_SEL_SIZE             : integer := 5;
 constant IF_ID_IMM_OFFSET         : integer := 0;
 constant IF_ID_SRC_OFFSET         : integer := IF_ID_IMM_OFFSET+WORDSIZE;
 constant IF_ID_DST_OFFSET         : integer := IF_ID_SRC_OFFSET+REG_ADDR;

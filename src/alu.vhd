@@ -6,7 +6,7 @@ entity alu is
 generic (WORDSIZE : integer := 16);
 port (                 	
     A, B : in std_logic_vector(WORDSIZE-1 downto 0); 
-    S : in std_logic_vector(3 downto 0);
+    S : in std_logic_vector(4 downto 0);
     Cin : in std_logic;
     F : inout std_logic_vector(WORDSIZE-1 downto 0);
     SetC, ClrC : out std_logic;
@@ -36,22 +36,23 @@ signal Z_flag_Con : std_logic;
 signal C_flag : std_logic;
 signal C_flag_Con : std_logic;
 
-constant OP_MOV : std_logic_vector((S'length)-1 downto 0) := "0000";
-constant OP_ADD : std_logic_vector((S'length)-1 downto 0) := "0001";
-constant OP_SUB : std_logic_vector((S'length)-1 downto 0) := "0010";
-constant OP_AND : std_logic_vector((S'length)-1 downto 0) := "0011";
-constant OP_OR : std_logic_vector((S'length)-1 downto 0) := "0100";
-constant OP_SHL : std_logic_vector((S'length)-1 downto 0) := "0101";
-constant OP_SHR : std_logic_vector((S'length)-1 downto 0) := "0110";
-constant OP_RLC : std_logic_vector((S'length)-1 downto 0) := "0111";
-constant OP_RRC : std_logic_vector((S'length)-1 downto 0) := "1000";
-constant OP_SETC : std_logic_vector((S'length)-1 downto 0) := "1001";
-constant OP_CLRC : std_logic_vector((S'length)-1 downto 0) := "1010";
-constant OP_NOT : std_logic_vector((S'length)-1 downto 0) := "1011";
-constant OP_INC : std_logic_vector((S'length)-1 downto 0) := "1100";
-constant OP_DEC : std_logic_vector((S'length)-1 downto 0) := "1101";
-constant OP_NEG : std_logic_vector((S'length)-1 downto 0) := "1110";
-constant OP_CLR : std_logic_vector((S'length)-1 downto 0) := "1111";
+constant OP_OP1  : std_logic_vector((S'length)-1 downto 0)  := "00000";
+constant OP_ADD  : std_logic_vector((S'length)-1 downto 0)  := "00001";
+constant OP_SUB  : std_logic_vector((S'length)-1 downto 0)  := "00010";
+constant OP_AND  : std_logic_vector((S'length)-1 downto 0)  := "00011";
+constant OP_OR   : std_logic_vector((S'length)-1 downto 0)  := "00100";
+constant OP_SHL  : std_logic_vector((S'length)-1 downto 0)  := "00101";
+constant OP_SHR  : std_logic_vector((S'length)-1 downto 0)  := "00110";
+constant OP_RLC  : std_logic_vector((S'length)-1 downto 0)  := "00111";
+constant OP_RRC  : std_logic_vector((S'length)-1 downto 0)  := "01000";
+constant OP_SETC : std_logic_vector((S'length)-1 downto 0)  := "01001";
+constant OP_CLRC : std_logic_vector((S'length)-1 downto 0)  := "01010";
+constant OP_NOT  : std_logic_vector((S'length)-1 downto 0)  := "01011";
+constant OP_INC  : std_logic_vector((S'length)-1 downto 0)  := "01100";
+constant OP_DEC  : std_logic_vector((S'length)-1 downto 0)  := "01101";
+constant OP_NEG  : std_logic_vector((S'length)-1 downto 0)  := "01110";
+constant OP_CLR  : std_logic_vector((S'length)-1 downto 0)  := "01111";
+constant OP_OP2  : std_logic_vector((S'length)-1 downto 0)  := "10000";
 
 begin
 
@@ -114,22 +115,21 @@ begin
   ClrN <= N_flag_con and not N_flag; 
   -----------------------------------------------------------------------------
 
-  F <= Op1 when S = OP_MOV 
+  F <= A when S = OP_OP1 
   else F_temp when S = OP_ADD 
   else F_temp when S = OP_SUB 
-  else (Op1 and Op2) when S = OP_AND 
-  else (Op1 or Op2) when S = OP_OR 
-  else (Op1(WORDSIZE-2 downto 0) & '0') when S = OP_SHL 
-  else ('0' & Op1(WORDSIZE-1 downto 1)) when S = OP_SHR 
-  else (Op1(WORDSIZE-2 downto 0) & Cin) when S = OP_RLC 
-  else (Cin & Op1(WORDSIZE-1 downto 1)) when S = OP_RRC 
-  else Op1 when S = OP_SETC 
-  else Op1 when S = OP_CLRC 
-  else not Op1 when S = OP_NOT 
+  else (A and B) when S = OP_AND 
+  else (A or B) when S = OP_OR 
+  else (A(WORDSIZE-2 downto 0) & '0') when S = OP_SHL 
+  else ('0' & A(WORDSIZE-1 downto 1)) when S = OP_SHR 
+  else (A(WORDSIZE-2 downto 0) & Cin) when S = OP_RLC 
+  else (Cin & A(WORDSIZE-1 downto 1)) when S = OP_RRC 
+  else not A when S = OP_NOT 
   else F_temp when S = OP_INC 
   else F_temp when S = OP_DEC 
   else F_temp when S = OP_NEG 
   else (others => '0') when S = OP_CLR 
+  else B when S = OP_OP2 
   else (others => '0');
   
 end architecture alu_0;
