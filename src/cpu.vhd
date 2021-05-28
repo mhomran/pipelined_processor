@@ -75,8 +75,8 @@ end component;
 
 constant OPCODE_SIZE       : integer := 5;
 constant CONTROL_WORD_SIZE : integer := 10;
-constant MemWrite_offset   : integer := CONTROL_WORD_SIZE - 1;
-constant MemRead_offset    : integer := CONTROL_WORD_SIZE - 2;
+constant Write_offset   : integer := CONTROL_WORD_SIZE - 1;
+constant Read_offset    : integer := CONTROL_WORD_SIZE - 2;
 constant ALU_offset        : integer := CONTROL_WORD_SIZE - 6;
 constant IMM_offset        : integer := CONTROL_WORD_SIZE - 7;
 constant IO_offset         : integer := CONTROL_WORD_SIZE - 8;
@@ -156,8 +156,8 @@ constant ID_EX_WBO_OFFSET         : integer := ID_EX_REGWRITE_OFFSET+1;
 constant ID_EX_IO_OFFSET          : integer := ID_EX_WBO_OFFSET+1;
 constant ID_EX_IMM_OFFSET         : integer := ID_EX_IO_OFFSET+1;
 constant ID_EX_ALU_OFFSET         : integer := ID_EX_IMM_OFFSET+1;
-constant ID_EX_MEMREAD_OFFSET     : integer := ID_EX_ALU_OFFSET+ALU_SEL_SIZE;
-constant ID_EX_MEMWRITE_OFFSET    : integer := ID_EX_MEMREAD_OFFSET+1;
+constant ID_EX_READ_OFFSET     : integer := ID_EX_ALU_OFFSET+ALU_SEL_SIZE;
+constant ID_EX_WRITE_OFFSET    : integer := ID_EX_READ_OFFSET+1;
 
 constant EX_MEM_RDST_OFFSET       : integer := 0;
 constant EX_MEM_DST_REG_OFFSET    : integer := EX_MEM_RDST_OFFSET+REG_ADDR;
@@ -165,8 +165,8 @@ constant EX_MEM_ALU_OUTPUT_OFFSET : integer := EX_MEM_DST_REG_OFFSET+REG_SIZE;
 constant EX_MEM_REGWRITE_OFFSET   : integer := EX_MEM_ALU_OUTPUT_OFFSET+REG_SIZE;
 constant EX_MEM_WBO_OFFSET        : integer := EX_MEM_REGWRITE_OFFSET+1;
 constant EX_MEM_IO_OFFSET         : integer := EX_MEM_WBO_OFFSET+1;
-constant EX_MEM_MEMREAD_OFFSET    : integer := EX_MEM_IO_OFFSET+1;
-constant EX_MEM_MEMWRITE_OFFSET   : integer := EX_MEM_MEMREAD_OFFSET+1;
+constant EX_MEM_READ_OFFSET    : integer := EX_MEM_IO_OFFSET+1;
+constant EX_MEM_WRITE_OFFSET   : integer := EX_MEM_READ_OFFSET+1;
 
 constant MEM_WB_RDST_OFFSET       : integer := 0;
 constant MEM_WB_ALU_OUTPUT_OFFSET : integer := MEM_WB_RDST_OFFSET+REG_ADDR;
@@ -214,6 +214,7 @@ signal RegFileWDst       : std_logic_vector(REG_ADDR-2 downto 0);
 --RAM
 signal RAM_address  : std_logic_vector(RAM_ADDRESS_SIZE-1 downto 0);
 signal RAM_input    : std_logic_vector(WORDSIZE*2-1 downto 0);
+signal RAM_input_en : std_logic;
 signal RAM_output   : std_logic_vector(WORDSIZE*2-1 downto 0);
 signal MemUse       : std_logic;
 
@@ -237,6 +238,7 @@ signal PC_carry       : std_logic;
 --IO registers
 signal IN_PORT_output : std_logic_vector(REG_SIZE-1 downto 0);
 signal OUT_PORT_input : std_logic_vector(REG_SIZE-1 downto 0);
+signal OUT_PORT_en    : std_logic;
 
 --sign extender
 signal IMM_VAL_extended : std_logic_vector(REG_SIZE-1 downto 0);
@@ -295,8 +297,10 @@ port map(PC_output, PC_increment, '0', PC_input, PC_carry);
 -----------------------------------RAM-----------------------------------------
 RAM_inst:
 ram generic map(WORDSIZE, RAM_ADDRESS_SIZE)
-port map(clk, EX_MEM_output(EX_MEM_MEMWRITE_OFFSET), RAM_address, RAM_input, RAM_output);
+port map(clk, RAM_input_en, RAM_address, RAM_input, RAM_output);
 
+RAM_input_en <= EX_MEM_output(EX_MEM_WRITE_OFFSET) and not 
+EX_MEM_output(EX_MEM_IO_OFFSET);
 
 RAM_address <= EX_MEM_output(EX_MEM_ALU_OUTPUT_OFFSET+RAM_ADDRESS_SIZE-1 downto 
 EX_MEM_ALU_OUTPUT_OFFSET) when EX_MEM_Use_Memory = '1' else PC_output(RAM_ADDRESS_SIZE-1 downto 0);
@@ -310,19 +314,20 @@ port map(clk, rst, '1', input_port, IN_PORT_output);
 
 OUT_PORT: reg generic map (REG_SIZE) 
 port map(clk, rst, EX_MEM_output(EX_MEM_IO_OFFSET), OUT_PORT_input, output_port); 
+OUT_PORT_en <= EX_MEM_output(EX_MEM_IO_OFFSET) and EX_MEM_output(EX_MEM_WRITE_OFFSET);
 
+OUT_PORT_input <= RAM_input;
 -----------------------------------ALU-----------------------------------------
 ALU_inst:
 alu generic map(REG_SIZE)
 port map(ALU_op1, ALU_op2, ALU_sel, C, ALU_output, SetC, ClrC, SetZ, ClrZ,
- SetN, ClrN);
+SetN, ClrN);
 
- ALU_op1 <= ID_EX_output(ID_EX_SRC_REG_OFFSET+REG_SIZE-1 downto ID_EX_SRC_REG_OFFSET)
- when ID_EX_output(ID_EX_IMM_OFFSET) = '0' else ID_EX_output(ID_EX_IMM_VAL_OFFSET+REG_SIZE-1 downto ID_EX_IMM_VAL_OFFSET);
- ALU_op2 <= ID_EX_output(ID_EX_DST_REG_OFFSET+REG_SIZE-1 downto ID_EX_DST_REG_OFFSET);
- ALU_sel <= ID_EX_output(ID_EX_ALU_OFFSET+ALU_SEL_SIZE-1 downto ID_EX_ALU_OFFSET);
+ALU_op1 <= ID_EX_output(ID_EX_SRC_REG_OFFSET+REG_SIZE-1 downto ID_EX_SRC_REG_OFFSET)
+when ID_EX_output(ID_EX_IMM_OFFSET) = '0' else ID_EX_output(ID_EX_IMM_VAL_OFFSET+REG_SIZE-1 downto ID_EX_IMM_VAL_OFFSET);
+ALU_op2 <= ID_EX_output(ID_EX_DST_REG_OFFSET+REG_SIZE-1 downto ID_EX_DST_REG_OFFSET);
+ALU_sel <= ID_EX_output(ID_EX_ALU_OFFSET+ALU_SEL_SIZE-1 downto ID_EX_ALU_OFFSET);
 
- 
 ------------------------------Status register----------------------------------
 SR: 
 status_register port map(clk, rst, C, SetC, ClrC, Z, SetZ, ClrZ, N, SetN, ClrN);
@@ -336,7 +341,9 @@ IF_ID:
 reg generic map (IF_ID_input'length) 
 port map(clk, rst, IF_ID_en, IF_ID_input, IF_ID_output);  
 
-EX_MEM_Use_Memory <= EX_MEM_output(EX_MEM_MEMREAD_OFFSET) or EX_MEM_output(EX_MEM_MEMWRITE_OFFSET);
+EX_MEM_Use_Memory <= (EX_MEM_output(EX_MEM_READ_OFFSET) or 
+EX_MEM_output(EX_MEM_WRITE_OFFSET)) and not EX_MEM_output(EX_MEM_IO_OFFSET);
+
 IF_ID_input <= RAM_output when EX_MEM_Use_Memory = '0' else INSTRUCTION_NOP;
 
 IF_ID_en <= '1'; --TODO: chnage when forwarding implemented
@@ -386,8 +393,8 @@ ALU_output;
 EX_MEM_input(EX_MEM_REGWRITE_OFFSET) <= ID_EX_output(ID_EX_REGWRITE_OFFSET);
 EX_MEM_input(EX_MEM_WBO_OFFSET)      <= ID_EX_output(ID_EX_WBO_OFFSET);
 EX_MEM_input(EX_MEM_IO_OFFSET)       <= ID_EX_output(ID_EX_IO_OFFSET);
-EX_MEM_input(EX_MEM_MEMREAD_OFFSET)  <= ID_EX_output(ID_EX_MEMREAD_OFFSET);
-EX_MEM_input(EX_MEM_MEMWRITE_OFFSET) <= ID_EX_output(ID_EX_MEMWRITE_OFFSET);
+EX_MEM_input(EX_MEM_READ_OFFSET)     <= ID_EX_output(ID_EX_READ_OFFSET);
+EX_MEM_input(EX_MEM_WRITE_OFFSET)    <= ID_EX_output(ID_EX_WRITE_OFFSET);
 
 MEM_WB: 
 reg generic map (MEM_WB_input'length) 
