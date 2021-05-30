@@ -143,7 +143,7 @@ constant IF_ID_IMM_OFFSET         : integer := 0;
 constant IF_ID_SRC_OFFSET         : integer := IF_ID_IMM_OFFSET+WORDSIZE;
 constant IF_ID_DST_OFFSET         : integer := IF_ID_SRC_OFFSET+REG_ADDR;
 constant IF_ID_OPCODE_OFFSET      : integer := IF_ID_DST_OFFSET+REG_ADDR;
-constant INSTRUCTION_NOP                   : std_logic_vector(INSTRUCTION_SIZE-1
+constant IF_ID_INSTRUCTION_NOP                   : std_logic_vector(INSTRUCTION_SIZE-1
  downto 0) :=  "00000000000000000000000000000000";
 
 constant ID_EX_RDST_OFFSET        : integer := 0;
@@ -280,7 +280,7 @@ MEM_WB_ALU_OUTPUT_OFFSET);
 -----------------------------------PC------------------------------------------
 PC: reg generic map (REG_SIZE) 
 port map(clk, rst, PC_input_en, PC_input, PC_output);  
-PC_input_en <= '1';
+PC_input_en <= not EX_MEM_Use_Memory;
 --TODO: chnage when forwarding implemented
 
 --TODO: make a unit to figure the instruction type (1 or 2 Words)
@@ -354,7 +354,7 @@ port map(clk, rst, IF_ID_en, IF_ID_input, IF_ID_output);
 EX_MEM_Use_Memory <= (EX_MEM_output(EX_MEM_READ_OFFSET) or 
 EX_MEM_output(EX_MEM_WRITE_OFFSET)) and not EX_MEM_output(EX_MEM_IO_OFFSET);
 
-IF_ID_input <= RAM_output when EX_MEM_Use_Memory = '0' else INSTRUCTION_NOP;
+IF_ID_input <= RAM_output when EX_MEM_Use_Memory = '0' else IF_ID_INSTRUCTION_NOP;
 
 IF_ID_en <= '1'; --TODO: chnage when forwarding implemented
 
@@ -426,5 +426,9 @@ EX_MEM_output(EX_MEM_ALU_OUTPUT_OFFSET+REG_SIZE-1 downto EX_MEM_ALU_OUTPUT_OFFSE
 MEM_WB_input(MEM_WB_WBO_OFFSET) <= EX_MEM_output(EX_MEM_WBO_OFFSET);
 MEM_WB_input(MEM_WB_REGWRITE_OFFSET) <= EX_MEM_output(EX_MEM_REGWRITE_OFFSET);
 
+-- Structural Hazards
+
+
 end architecture cpu_0;
+
 
