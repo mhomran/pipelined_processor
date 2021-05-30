@@ -19,23 +19,29 @@ end ALU;
 -- Architecture
 architecture alu_0 of alu is 
 
-component full_adder is
-  port (
-    a,b,cin : in  std_logic;
-    s, cout : out std_logic );
+component ripple_adder is
+  generic (
+    SIZE : integer := 32
+    );
+	port (
+    op1, op2 : in std_logic_vector(SIZE-1 downto 0);
+    cin : in std_logic;
+    result : out  std_logic_vector(SIZE-1 downto 0);
+    RipAdd_cout : out std_logic
+    );
 end component;
 
-signal Op1: std_logic_vector(WORDSIZE-1 downto 0);
-signal Op2: std_logic_vector(WORDSIZE-1 downto 0);
-signal Carry_temp : std_logic_vector(WORDSIZE-1 DOWNTO 0);
-signal F_temp: std_logic_vector(WORDSIZE-1 downto 0); 
-signal Cin_temp : std_logic;
-signal N_flag : std_logic;
-signal N_flag_Con : std_logic;
-signal Z_flag : std_logic;
-signal Z_flag_Con : std_logic;
-signal C_flag : std_logic;
-signal C_flag_Con : std_logic;
+signal RipAdd_op1            : std_logic_vector(WORDSIZE-1 downto 0);
+signal RipAdd_op2            : std_logic_vector(WORDSIZE-1 downto 0);
+signal RipAdd_cout           : std_logic;
+signal RipAdd_output  : std_logic_vector(WORDSIZE-1 downto 0); 
+signal RipAdd_cin     : std_logic;
+signal N_flag         : std_logic;
+signal N_flag_Con     : std_logic;
+signal Z_flag         : std_logic;
+signal Z_flag_Con     : std_logic;
+signal C_flag         : std_logic;
+signal C_flag_Con     : std_logic;
 
 constant OP_OP1  : std_logic_vector((S'length)-1 downto 0)  := "00000";
 constant OP_ADD  : std_logic_vector((S'length)-1 downto 0)  := "00001";
@@ -58,32 +64,29 @@ constant OP_OP2  : std_logic_vector((S'length)-1 downto 0)  := "10000";
 begin
 
   --operands
-  Op1 <= not A when S = OP_NEG   
+  RipAdd_op1 <= not A when S = OP_NEG   
   else A;
 
-  Op2 <= not B when S = OP_SUB 
+  RipAdd_op2 <= not B when S = OP_SUB 
   else (others => '1') when S = OP_DEC 
   else B when S = OP_ADD or S = OP_AND or S = OP_OR 
   else (others => '0');
 
   --Cin
-  Cin_temp <= '1' when S = OP_INC or S = OP_NEG or S = OP_SUB
+  RipAdd_cin <= '1' when S = OP_INC or S = OP_NEG or S = OP_SUB
   else '0'; 
-  --generate the full adders
-  Adders_output_0: full_adder port map(Op1(0), Op2(0), Cin_temp, F_temp(0), Carry_temp(0));
-  adders: for i in 1 to WORDSIZE-1 generate
-    Adder_output: full_adder port map(Op1(i), Op2(i), Carry_temp(i-1), F_temp(i), Carry_temp(i));
-  end generate;
 
+  RippleAdder:
+  ripple_adder port map(RipAdd_op1, RipAdd_op2, RipAdd_cin, RipAdd_output, RipAdd_cout);
   --------------------------------FLAGS-----------------------------------------
 
   --carry flag
-  C_flag <= Carry_temp(WORDSIZE-1) when S = OP_ADD
-  else Carry_temp(WORDSIZE-1) when S = OP_SUB
-  else Op1(0) when S = OP_SHR
-  else Op1(0) when S = OP_RRC
-  else Op1(WORDSIZE-1) when S = OP_SHL
-  else Op1(WORDSIZE-1) when S = OP_RLC
+  C_flag <= RipAdd_cout when S = OP_ADD
+  else RipAdd_cout when S = OP_SUB
+  else RipAdd_op1(0) when S = OP_SHR
+  else RipAdd_op1(0) when S = OP_RRC
+  else RipAdd_op1(WORDSIZE-1) when S = OP_SHL
+  else RipAdd_op1(WORDSIZE-1) when S = OP_RLC
   else '1' when S = OP_SETC 
   else '0';
 
@@ -117,8 +120,8 @@ begin
   -----------------------------------------------------------------------------
 
   F <= A when S = OP_OP1 
-  else F_temp when S = OP_ADD 
-  else F_temp when S = OP_SUB 
+  else RipAdd_output when S = OP_ADD 
+  else RipAdd_output when S = OP_SUB 
   else (A and B) when S = OP_AND 
   else (A or B) when S = OP_OR 
   else std_logic_vector(shift_left(unsigned(B), to_integer(unsigned(A(4 downto 0))))) when S = OP_SHL 
@@ -126,9 +129,9 @@ begin
   else (A(WORDSIZE-2 downto 0) & Cin) when S = OP_RLC 
   else (Cin & A(WORDSIZE-1 downto 1)) when S = OP_RRC 
   else not A when S = OP_NOT 
-  else F_temp when S = OP_INC 
-  else F_temp when S = OP_DEC 
-  else F_temp when S = OP_NEG 
+  else RipAdd_output when S = OP_INC 
+  else RipAdd_output when S = OP_DEC 
+  else RipAdd_output when S = OP_NEG 
   else (others => '0') when S = OP_CLR 
   else B when S = OP_OP2 
   else (others => '0');
