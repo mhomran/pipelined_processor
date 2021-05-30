@@ -1,8 +1,9 @@
 import sys
-import click
 
 from io_lib import IO
-import constants
+from tokenizer import Tokenizer
+from pl_parser import Parser 
+from word_Counter import WordCounter
 
 def main():
     pass
@@ -11,28 +12,36 @@ def wordize(lines):
     """
     Parse and tokenize lines
     """
-    for l in lines :
-        print(l)
-
+    parser      = Parser()
+    tokenizer   = Tokenizer()
+    word_ctr    = WordCounter()
     words = []
+    for l in lines :
+        # The rstrip() method removes any trailing characters (characters at the end a string)
+        # space is the default trailing character to remove
+        if (l.rstrip()) :
+            statement = parser.parseSentence(l, int(word_ctr))
+            token_lists = tokenizer.tokenizeStatement(statement, int(word_ctr))
+            for l in token_lists :
+                if len(l) > 0 :
+                    words.append(l)
+                    word_ctr += 1    
     return words
     
 # Main Command
-@main.command()
-@click.argument('in_file', required=True)
-@click.argument('out_file', required=True)
-def compile(**kwargs):
+
+def compile(**Kargs):
     # Initialize IO Manager
     io_man      = IO()
     
     # Read the given file into lines
-    lines = io_man.readFileIntoLines(kwargs.get("in_file"))
+    lines = io_man.readFileIntoLines(Kargs[0])
 
     # Translate to binary codes
     out_lines = wordize(lines)
 
     # Write to file
-    io_man.writeLineToFile(kwargs.get("out_file"), out_lines)
+    io_man.writeLineToFile(Kargs[1], out_lines)
 
     # Close the open files
     io_man.closeOpenFiles()
@@ -43,4 +52,4 @@ if __name__ == "__main__.py" :
     args = sys.argv
     if len(args) == 3:
         print("Pipelined Assembler")
-    main()
+    compile(args[1:2])

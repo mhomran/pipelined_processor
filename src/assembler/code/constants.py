@@ -42,6 +42,31 @@ OPCODES_DICT = {
     'STD'   : 0b10110,   # 0x16
 }
 
+OPCODE_NBITS = {
+    OpcodeType.DOUBLE   : 8,
+    OpcodeType.SINGLE   : 8,
+    OpcodeType.NO_OPD   : 8
+    #OpcodeType.JUMP    : 
+    #OpcodeType.BRANCH  : 
+}
+
+OPCODE_TYPE = [
+    OpcodeType.DOUBLE,
+    OpcodeType.DOUBLE,
+    OpcodeType.DOUBLE,
+    OpcodeType.DOUBLE,
+    OpcodeType.DOUBLE,
+    OpcodeType.DOUBLE,
+    OpcodeType.DOUBLE,
+    OpcodeType.DOUBLE,
+    OpcodeType.DOUBLE,
+    OpcodeType.SINGLE,
+    OpcodeType.NO_OPD
+    #OpcodeType.JUMP,
+    #OpcodeType.BRANCH
+]
+
+IMMEDIA_REGEX= r'^@'
 
 REG_COUNT = 7
 REG_BIT_COUNT = 4
@@ -51,8 +76,20 @@ SP_REG = 9
 REG_SUBREGEX = f"[Rr][0-{REG_COUNT}]"
 REG_REGEX = f"(?<!\w)({REG_SUBREGEX})(?!\w)"
 SYMBOL_NAME_REGEX = "[A-Za-z_]{1}[A-Za-z0-9_]*"
-INDIRECT_REGEX= r'^@'
 DEFINE_REGEX = r'^define$'
 INDEX_MATCHER = r'[0-9]{1,}(?=\()'
 IMMEDIATE_VALUE_MATCHER = r'(?<=#)[0-9]{1,}'
-COMMENT_REGEX = r';.*'
+COMMENT_REGEX = r'#.*'
+
+
+MODES = ["IMMEDIATE", "REGISTER" , "MEMORY"]
+
+MODE_CODE = {
+    "REGISTER" : 0,
+    "MEMORY"   : 1,
+    "IMMEDIATE": 2, 
+}
+
+MODE_REGEX = {
+    "IMMEDIATE": r"^#[0-9].*$",
+}

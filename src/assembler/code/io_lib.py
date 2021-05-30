@@ -1,5 +1,9 @@
+
+from SingletonMeta import SingletonMeta
+
 ## Simple IO Class
-class IO():
+
+class IO(metaclass=SingletonMeta):
     openFiles = []
 
     ## Open file and save it to openfiles
