@@ -23,12 +23,12 @@ component ripple_adder is
   generic (
     SIZE : integer := 32
     );
-	port (
-    op1, op2 : in std_logic_vector(SIZE-1 downto 0);
-    cin : in std_logic;
-    result : out  std_logic_vector(SIZE-1 downto 0);
-    RipAdd_cout : out std_logic
-    );
+    port (
+      op1, op2 : in std_logic_vector(SIZE-1 downto 0);
+      cin : in std_logic;
+      result : out  std_logic_vector(SIZE-1 downto 0);
+      cout : out std_logic
+      );
 end component;
 
 signal RipAdd_op1            : std_logic_vector(WORDSIZE-1 downto 0);
