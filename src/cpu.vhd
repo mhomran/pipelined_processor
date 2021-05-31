@@ -136,6 +136,8 @@ component ripple_adder is
 end component;
 ---------------------------------signals---------------------------------------
 --constants
+constant NOP_CONTROL_WORD         : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "00000000000";
+
 constant INSTRUCTION_SIZE         : integer := REG_SIZE;
 constant IMMEDIATE_VAL_SIZE       : integer := REG_SIZE;
 constant ALU_SEL_SIZE             : integer := 5;
@@ -143,8 +145,7 @@ constant IF_ID_IMM_OFFSET         : integer := 0;
 constant IF_ID_SRC_OFFSET         : integer := IF_ID_IMM_OFFSET+WORDSIZE;
 constant IF_ID_DST_OFFSET         : integer := IF_ID_SRC_OFFSET+REG_ADDR;
 constant IF_ID_OPCODE_OFFSET      : integer := IF_ID_DST_OFFSET+REG_ADDR;
-constant IF_ID_INSTRUCTION_NOP                   : std_logic_vector(INSTRUCTION_SIZE-1
- downto 0) :=  "00000000000000000000000000000000";
+constant IF_ID_INSTRUCTION_NOP    : std_logic_vector(INSTRUCTION_SIZE-1 downto 0) :=  "00000000000000000000000000000000";
 
 constant ID_EX_RDST_OFFSET        : integer := 0;
 constant ID_EX_DST_REG_OFFSET     : integer := ID_EX_RDST_OFFSET+REG_ADDR;
@@ -192,10 +193,9 @@ signal ID_EX_input   : std_logic_vector(
 ((CONTROL_WORD_SIZE + IMMEDIATE_VAL_SIZE + 2*REG_SIZE + 2*REG_ADDR)-1) downto 0);
 signal ID_EX_output  : std_logic_vector(ID_EX_input'length-1 downto 0);
 signal ID_EX_en      : std_logic;
+constant ID_EX_INSTRUCTION_NOP    : std_logic_vector(ID_EX_input'length-1 downto 0) := "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
 
-signal EX_MEM_input  : std_logic_vector(
-((CONTROL_WORD_SIZE-ALU_SEL_SIZE-1 + 2*REG_SIZE + REG_ADDR)-1)
- downto 0);
+signal EX_MEM_input  : std_logic_vector(((CONTROL_WORD_SIZE-ALU_SEL_SIZE-1 + 2*REG_SIZE + REG_ADDR)-1) downto 0);
 signal EX_MEM_output : std_logic_vector(EX_MEM_input'length-1 downto 0);
 signal EX_MEM_en     : std_logic;
 
@@ -265,6 +265,9 @@ signal SRC_Equals_MEM_Dst       : std_logic;
 signal DST_Equals_EX_Dst        : std_logic;
 signal DST_Equals_MEM_Dst       : std_logic;
 
+-- Load Use
+signal Load_Use                 : std_logic;
+signal Load_Use_Case            : std_logic;
 begin
 ---------------------------------Register file---------------------------------
 RegFile: 
@@ -293,7 +296,7 @@ MEM_WB_ALU_OUTPUT_OFFSET);
 -----------------------------------PC------------------------------------------
 PC: reg generic map (REG_SIZE) 
 port map(clk, rst, PC_input_en, PC_input, PC_output);  
-PC_input_en <= not EX_MEM_Use_Memory;
+PC_input_en <= not (EX_MEM_Use_Memory or Load_Use);
 --TODO: chnage when forwarding implemented
 
 --TODO: make a unit to figure the instruction type (1 or 2 Words)
@@ -375,7 +378,7 @@ EX_MEM_output(EX_MEM_WRITE_OFFSET)) and not EX_MEM_output(EX_MEM_IO_OFFSET);
 
 IF_ID_input <= RAM_output when EX_MEM_Use_Memory = '0' else IF_ID_INSTRUCTION_NOP;
 
-IF_ID_en <= '1'; --TODO: chnage when forwarding implemented
+IF_ID_en <= not Load_Use; --TODO: chnage when forwarding implemented
 
 ID_EX: 
 reg generic map (ID_EX_input'length) 
@@ -404,7 +407,8 @@ IMM_VAL_extended(REG_SIZE-1 downto WORDSIZE) <= (others => '1') when
 IF_ID_output(WORDSIZE+IF_ID_IMM_OFFSET-1) = '1' else (others => '0');
 
 ID_EX_input(CONTROL_WORD_SIZE+ID_EX_CTRL_SIG_OFFSET-1 downto ID_EX_CTRL_SIG_OFFSET) <=
-control_unit_output; --TODO: chnage when forwarding implemented
+control_unit_output when Load_Use='0'
+else NOP_CONTROL_WORD; --TODO: chnage when forwarding implemented
 
 EX_MEM: 
 reg generic map (EX_MEM_input'length) 
@@ -478,6 +482,12 @@ Forward_Src              <=     EX_to_EX_Forwarding_Src
 Forward_Dst              <=     EX_to_EX_Forwarding_Dst
                              or MEM_to_EX_Forwarding_Dst;
 
+
+-- Load Use
+
+Load_Use_Case <= '1' when (ID_EX_output(ID_EX_RDST_OFFSET+REG_ADDR-1 downto ID_EX_RDST_OFFSET)=IF_ID_output(IF_ID_SRC_OFFSET+REG_ADDR-1 downto IF_ID_SRC_OFFSET))
+              else '0';
+Load_Use      <= ID_EX_output(ID_EX_READ_OFFSET) and Load_Use_Case;
 
 end architecture cpu_0;
 
