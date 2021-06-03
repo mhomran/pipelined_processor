@@ -1,10 +1,8 @@
 import sys
-from constants import PC_REG
 
 from io_lib import IO
 from tokenizer import Tokenizer
 from pl_parser import Parser 
-from word_Counter import WordCounter
 
 def wordize(lines):
     """
@@ -17,12 +15,17 @@ def wordize(lines):
     for l in lines :
         # The rstrip() method removes any trailing characters (characters at the end a string)
         # space is the default trailing character to remove
+        
         if (l.rstrip()) :
             statement = parser.parseSentence(l)
-            token_lists = tokenizer.tokenizeStatement(statement)
-            for l in token_lists :    
-                words.append(l) 
-                 
+            token_lists , Location = tokenizer.tokenizeStatement(statement)
+            
+            for l in token_lists :     
+                if len(l) == 2: 
+                    words.append([Location[0][0] , l[0]]) 
+                    words.append([Location[0][1] , l[1]]) 
+                else:
+                    words.append([Location[0] , l]) 
     return words
     return
     
@@ -37,8 +40,11 @@ def compile(Kargs1,Kargs2):
 
     # Translate to binary codes
     words = wordize(lines)
-    out_lines = [''.join([str(token) for token in word[::-1]]) + '\n' for word in words ]
-    
+
+    out_lines = ''
+    for word in words:
+        out_lines += word[0] + ": " + word[1]+'\n'
+       
 
     print(Kargs2)
     # Write to file

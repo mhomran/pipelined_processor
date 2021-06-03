@@ -1,3 +1,14 @@
 {
-    "python.analysis.extraPaths": ["./src/assembler/code"]
+    "python.analysis.extraPaths": [
+        "./src/assembler/code"
+    ],
+    "debug.allowBreakpointsEverywhere": true,
+    "files.autoGuessEncoding": true,
+    "files.exclude": {
+        "**/.vscode": true,
+        "compile_commands.json": true,
+        "*.hrccproj": true,
+        "*.sln": true,
+        "*.suo": true
+    }
 }

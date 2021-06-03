@@ -8,11 +8,12 @@ Design of a 5 stage processor
 
 $ pip install -r ./src/assembler/requirements.txt
 
-### Usage
+### Assembler Test
 
-$ python ./assembler compile <in_file> <out_file>
+$ python ./src/assembler/code/ ./test_cases/test.asm ./out
 
-# Block diagram
+### Block diagram
+
 <p align="center">
   <a href="" rel="noopener">
     <img src="docs/BlockDiagram.png" alt="Block Diagram">
