@@ -16,6 +16,7 @@ class IO(metaclass=SingletonMeta):
     def writeLineToFile(self, file_name, lines):
         f = open(file_name, 'w')
         self.openFiles.append(f)
+        
         f.writelines(lines)
     
     ## Close Opened File

@@ -9,19 +9,16 @@ class Parser():
     def __init__(self):
         self.label_store = LabelStore()
     
-    def parseSentence(self, str, position) :
+    def parseSentence(self, str) :
         # Remove comments
-        str = re.sub(constants.COMMENT_REGEX, '', str)
-
-        # Extract Label
-        str = self.extractLabel(str, position);
+        str = re.sub(constants.COMMENT_REGEX, '', str);
 
         # Segment the sentence
         segments = re.findall(constants.SEGMENT_REGEX, str);
 
-        # print(segments)
+        #print(segments)OpcodeType.SINGLE,
 
-        return segments;
+        return segments
 
     def extractLabel(self, sentence, position) :
         # Detect existence of label delimiter

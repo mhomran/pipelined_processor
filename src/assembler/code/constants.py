@@ -1,9 +1,10 @@
 from enum import Enum
 
 class OpcodeType(Enum) :
-    NO_OPD   =  0,
+    NOP      =  0,
     SINGLE   =  1,
-    DOUBLE   =  2,    
+    DOUBLE   =  2,   
+    MEMORY   =  3,   
     DEFAULT  = -1,
     ##BRANCH = 1,
     ##JUMP   = 4,
@@ -24,17 +25,17 @@ OPCODES_DICT = {
     'RRC'   : 0b01001,   # 0x09
     
 
-    # SINGLE OPERANDs & NOP
-    'NOP'   : 0b01010,   # 0x0A
-    'SETC'  : 0b01011,   # 0x0B
-    'CLRC'  : 0b01100,   # 0x0C
-    'CLR'   : 0b01101,   # 0x0D
-    'NOT'   : 0b01110,   # 0x0E
-    'INC'   : 0b01111,   # 0x0F
-    'DEC'   : 0b10000,   # 0x10
-    'NEG'   : 0b10001,   # 0x11
-    'IN'    : 0b10010,   # 0x12
-    'OUT'   : 0b10011,   # 0x13
+    # SINGLE OPERANDs & NO OPERANDs
+    'NOP'   : 0b01010,   # 0x0A NO OPERAND
+    'SETC'  : 0b01011,   # 0x0B NO OPERAND
+    'CLRC'  : 0b01100,   # 0x0C NO OPERAND
+    'CLR'   : 0b01101,   # 0x0D SINGLE OPERAND
+    'NOT'   : 0b01110,   # 0x0E SINGLE OPERAND
+    'INC'   : 0b01111,   # 0x0F SINGLE OPERAND
+    'DEC'   : 0b10000,   # 0x10 SINGLE OPERAND
+    'NEG'   : 0b10001,   # 0x11 SINGLE OPERAND
+    'IN'    : 0b10010,   # 0x12 SINGLE OPERAND
+    'OUT'   : 0b10011,   # 0x13 SINGLE OPERAND
     
     # MEMORY INSTRUCTIONS
     'LDM'   : 0b10100,   # 0x14
@@ -43,9 +44,10 @@ OPCODES_DICT = {
 }
 
 OPCODE_NBITS = {
-    OpcodeType.DOUBLE   : 8,
+    OpcodeType.NOP      : 16,
+    OpcodeType.DOUBLE   : 8, 
     OpcodeType.SINGLE   : 8,
-    OpcodeType.NO_OPD   : 8
+    OpcodeType.MEMORY   : 8
     #OpcodeType.JUMP    : 
     #OpcodeType.BRANCH  : 
 }
@@ -60,13 +62,26 @@ OPCODE_TYPE = [
     OpcodeType.DOUBLE,
     OpcodeType.DOUBLE,
     OpcodeType.DOUBLE,
+    OpcodeType.DOUBLE,
+    OpcodeType.NOP,
+    OpcodeType.NOP,
+    OpcodeType.NOP,
     OpcodeType.SINGLE,
-    OpcodeType.NO_OPD
+    OpcodeType.SINGLE,
+    OpcodeType.SINGLE,
+    OpcodeType.SINGLE,
+    OpcodeType.SINGLE,
+    OpcodeType.SINGLE,
+    OpcodeType.SINGLE,
+    OpcodeType.MEMORY,
+    OpcodeType.MEMORY,
+    OpcodeType.MEMORY
     #OpcodeType.JUMP,
     #OpcodeType.BRANCH
 ]
 
-IMMEDIA_REGEX= r'^@'
+ORG_REGEX = r'.ORG'
+INT_REGEX= r'^\d+$'
 
 REG_COUNT = 7
 REG_BIT_COUNT = 4
@@ -76,10 +91,10 @@ SP_REG = 9
 REG_SUBREGEX = f"[Rr][0-{REG_COUNT}]"
 REG_REGEX = f"(?<!\w)({REG_SUBREGEX})(?!\w)"
 SYMBOL_NAME_REGEX = "[A-Za-z_]{1}[A-Za-z0-9_]*"
-DEFINE_REGEX = r'^define$'
 INDEX_MATCHER = r'[0-9]{1,}(?=\()'
 IMMEDIATE_VALUE_MATCHER = r'(?<=#)[0-9]{1,}'
 COMMENT_REGEX = r'#.*'
+SEGMENT_REGEX = r'[A-Za-z0-9\.]+'
 
 
 MODES = ["IMMEDIATE", "REGISTER" , "MEMORY"]
