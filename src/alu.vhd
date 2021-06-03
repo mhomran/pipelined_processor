@@ -83,16 +83,20 @@ begin
   --carry flag
   C_flag <= RipAdd_cout when S = OP_ADD
   else RipAdd_cout when S = OP_SUB
-  else RipAdd_op1(0) when S = OP_SHR
-  else RipAdd_op1(0) when S = OP_RRC
-  else RipAdd_op1(WORDSIZE-1) when S = OP_SHL
-  else RipAdd_op1(WORDSIZE-1) when S = OP_RLC
+  else RipAdd_cout when S = OP_INC
+  else RipAdd_cout when S = OP_DEC
+  else A(to_integer(unsigned(A(4 downto 0)))) when 
+  S = OP_SHR and not (to_integer(unsigned(A(4 downto 0))) = 0)
+  else A(WORDSIZE-to_integer(unsigned(A(4 downto 0)))) when 
+  S = OP_SHL and not (to_integer(unsigned(A(4 downto 0))) = 0)
+  else A(0) when S = OP_RRC
+  else A(WORDSIZE-1) when S = OP_RLC
   else '1' when S = OP_SETC 
   else '0';
 
   C_flag_con <= '1' 
   when S = OP_ADD or S = OP_SUB or S = OP_SETC or S = OP_CLRC or S = OP_SHL or
-  S = OP_SHR or S = OP_RLC or S = OP_RRC
+  S = OP_SHR or S = OP_RLC or S = OP_RRC OR S = OP_INC OR S = OP_DEC
   else '0';
 
   SetC <= C_flag_con and C_flag;
@@ -103,7 +107,7 @@ begin
 
   Z_flag_con <= '1' when S = OP_CLR or S = OP_NOT or S = OP_INC or 
   S = OP_DEC or S = OP_NEG or S = OP_ADD or S = OP_SUB or S = OP_AND or
-  S = OP_OR else '0';
+  S = OP_OR OR S = OP_RRC OR S = OP_RLC else '0';
 
   SetZ <= Z_flag_con and Z_flag;
   ClrZ <= Z_flag_con and not Z_flag; 
@@ -112,7 +116,7 @@ begin
   N_flag <= F(WORDSIZE-1);
 
   N_flag_con <= '1' when S = OP_NOT or S = OP_INC or S = OP_DEC or S = OP_NEG or
-  S = OP_ADD or S = OP_SUB or S = OP_AND or S = OP_OR
+  S = OP_ADD or S = OP_SUB or S = OP_AND or S = OP_OR OR S = OP_RRC OR S = OP_RLC
   else '0';
 
   SetN <= N_flag_con and N_flag;
