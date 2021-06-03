@@ -136,6 +136,8 @@ component ripple_adder is
 end component;
 ---------------------------------signals---------------------------------------
 --constants
+constant NOP_CONTROL_WORD         : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "00000000000";
+
 constant INSTRUCTION_SIZE         : integer := REG_SIZE;
 constant IMMEDIATE_VAL_SIZE       : integer := REG_SIZE;
 constant ALU_SEL_SIZE             : integer := 5;
@@ -143,8 +145,7 @@ constant IF_ID_IMM_OFFSET         : integer := 0;
 constant IF_ID_SRC_OFFSET         : integer := IF_ID_IMM_OFFSET+WORDSIZE;
 constant IF_ID_DST_OFFSET         : integer := IF_ID_SRC_OFFSET+REG_ADDR;
 constant IF_ID_OPCODE_OFFSET      : integer := IF_ID_DST_OFFSET+REG_ADDR;
-constant IF_ID_INSTRUCTION_NOP                   : std_logic_vector(INSTRUCTION_SIZE-1
- downto 0) :=  "00000000000000000000000000000000";
+constant IF_ID_INSTRUCTION_NOP    : std_logic_vector(INSTRUCTION_SIZE-1 downto 0) :=  "00000000000000000000000000000000";
 
 constant ID_EX_RDST_OFFSET        : integer := 0;
 constant ID_EX_DST_REG_OFFSET     : integer := ID_EX_RDST_OFFSET+REG_ADDR;
@@ -158,6 +159,7 @@ constant ID_EX_IMM_OFFSET         : integer := ID_EX_IO_OFFSET+1;
 constant ID_EX_ALU_OFFSET         : integer := ID_EX_IMM_OFFSET+1;
 constant ID_EX_READ_OFFSET     : integer := ID_EX_ALU_OFFSET+ALU_SEL_SIZE;
 constant ID_EX_WRITE_OFFSET    : integer := ID_EX_READ_OFFSET+1;
+constant ID_EX_RSRC_OFFSET     : integer := ID_EX_WRITE_OFFSET+1;
 
 constant EX_MEM_RDST_OFFSET       : integer := 0;
 constant EX_MEM_DST_REG_OFFSET    : integer := EX_MEM_RDST_OFFSET+REG_ADDR;
@@ -188,13 +190,12 @@ signal IF_ID_output  : std_logic_vector(INSTRUCTION_SIZE-1 downto 0);
 signal IF_ID_en      : std_logic;
 
 signal ID_EX_input   : std_logic_vector(
-((CONTROL_WORD_SIZE + IMMEDIATE_VAL_SIZE + 2*REG_SIZE + REG_ADDR)-1) downto 0);
+((CONTROL_WORD_SIZE + IMMEDIATE_VAL_SIZE + 2*REG_SIZE + 2*REG_ADDR)-1) downto 0);
 signal ID_EX_output  : std_logic_vector(ID_EX_input'length-1 downto 0);
 signal ID_EX_en      : std_logic;
+constant ID_EX_INSTRUCTION_NOP    : std_logic_vector(ID_EX_input'length-1 downto 0) := "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
 
-signal EX_MEM_input  : std_logic_vector(
-((CONTROL_WORD_SIZE-ALU_SEL_SIZE-1 + 2*REG_SIZE + REG_ADDR)-1)
- downto 0);
+signal EX_MEM_input  : std_logic_vector(((CONTROL_WORD_SIZE-ALU_SEL_SIZE-1 + 2*REG_SIZE + REG_ADDR)-1) downto 0);
 signal EX_MEM_output : std_logic_vector(EX_MEM_input'length-1 downto 0);
 signal EX_MEM_en     : std_logic;
 
@@ -222,6 +223,7 @@ signal MemUse       : std_logic;
 
 --ALU
 signal ALU_op1        : std_logic_vector(WORDSIZE*2-1 downto 0);
+signal ALU_op1_mux1   : std_logic_vector(WORDSIZE*2-1 downto 0);
 signal ALU_op2        : std_logic_vector(WORDSIZE*2-1 downto 0);
 signal ALU_output     : std_logic_vector(WORDSIZE*2-1 downto 0);
 signal ALU_sel        : std_logic_vector(ALU_SEL_SIZE-1 downto 0);
@@ -251,7 +253,21 @@ signal control_unit_output : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0);
 --load use case
 signal EX_MEM_Use_Memory   : std_logic;
 
+--Forwarding unit
+signal EX_to_EX_Forwarding_Src  : std_logic;
+signal EX_to_EX_Forwarding_Dst  : std_logic;
+signal MEM_to_EX_Forwarding_Src : std_logic;
+signal MEM_to_EX_Forwarding_Dst : std_logic;
+signal Forward_Src              : std_logic;
+signal Forward_Dst              : std_logic;
+signal SRC_Equals_EX_Dst        : std_logic;
+signal SRC_Equals_MEM_Dst       : std_logic;
+signal DST_Equals_EX_Dst        : std_logic;
+signal DST_Equals_MEM_Dst       : std_logic;
 
+-- Load Use
+signal Load_Use                 : std_logic;
+signal Load_Use_Case            : std_logic;
 begin
 ---------------------------------Register file---------------------------------
 RegFile: 
@@ -280,7 +296,7 @@ MEM_WB_ALU_OUTPUT_OFFSET);
 -----------------------------------PC------------------------------------------
 PC: reg generic map (REG_SIZE) 
 port map(clk, rst, PC_input_en, PC_input, PC_output);  
-PC_input_en <= not EX_MEM_Use_Memory;
+PC_input_en <= not (EX_MEM_Use_Memory or Load_Use);
 --TODO: chnage when forwarding implemented
 
 --TODO: make a unit to figure the instruction type (1 or 2 Words)
@@ -332,10 +348,16 @@ alu generic map(REG_SIZE)
 port map(ALU_op1, ALU_op2, ALU_sel, C, ALU_output, SetC, ClrC, SetZ, ClrZ,
 SetN, ClrN);
 
-ALU_op1 <= ID_EX_output(ID_EX_DST_REG_OFFSET+REG_SIZE-1 downto ID_EX_DST_REG_OFFSET)
-when ID_EX_output(ID_EX_IMM_OFFSET) = '0' 
-else ID_EX_output(ID_EX_IMM_VAL_OFFSET+REG_SIZE-1 downto ID_EX_IMM_VAL_OFFSET);
-ALU_op2 <= ID_EX_output(ID_EX_SRC_REG_OFFSET+REG_SIZE-1 downto ID_EX_SRC_REG_OFFSET);
+ALU_op1 <=       ALU_op1_mux1                                                                        when ID_EX_output(ID_EX_IMM_OFFSET) = '0'
+            else ID_EX_output(ID_EX_IMM_VAL_OFFSET+REG_SIZE-1 downto ID_EX_IMM_VAL_OFFSET);
+
+ALU_op1_mux1 <=  ID_EX_output(ID_EX_DST_REG_OFFSET+REG_SIZE-1 downto ID_EX_DST_REG_OFFSET)           when Forward_Dst='0'
+            else EX_MEM_output(EX_MEM_ALU_OUTPUT_OFFSET+REG_SIZE-1 downto EX_MEM_ALU_OUTPUT_OFFSET)  when Forward_Dst='1' and EX_to_EX_Forwarding_Dst='1'
+            else MEM_WB_output(MEM_WB_MEM_OUTPUT_OFFSET+REG_SIZE-1 downto MEM_WB_MEM_OUTPUT_OFFSET)  when Forward_Dst='1' and MEM_to_EX_Forwarding_Dst='1';
+
+ALU_op2 <=       ID_EX_output(ID_EX_SRC_REG_OFFSET+REG_SIZE-1 downto ID_EX_SRC_REG_OFFSET)           when Forward_Src='0'
+            else EX_MEM_output(EX_MEM_ALU_OUTPUT_OFFSET+REG_SIZE-1 downto EX_MEM_ALU_OUTPUT_OFFSET)  when Forward_Src='1' and EX_to_EX_Forwarding_Src='1'
+            else MEM_WB_output(MEM_WB_MEM_OUTPUT_OFFSET+REG_SIZE-1 downto MEM_WB_MEM_OUTPUT_OFFSET)  when Forward_Src='1' and MEM_to_EX_Forwarding_Src='1';                                                                         
 ALU_sel <= ID_EX_output(ID_EX_ALU_OFFSET+ALU_SEL_SIZE-1 downto ID_EX_ALU_OFFSET);
 
 ------------------------------Status register----------------------------------
@@ -356,7 +378,7 @@ EX_MEM_output(EX_MEM_WRITE_OFFSET)) and not EX_MEM_output(EX_MEM_IO_OFFSET);
 
 IF_ID_input <= RAM_output when EX_MEM_Use_Memory = '0' else IF_ID_INSTRUCTION_NOP;
 
-IF_ID_en <= '1'; --TODO: chnage when forwarding implemented
+IF_ID_en <= not Load_Use; --TODO: chnage when forwarding implemented
 
 ID_EX: 
 reg generic map (ID_EX_input'length) 
@@ -366,6 +388,9 @@ ID_EX_en <= '1';
 
 ID_EX_input(REG_ADDR+ID_EX_RDST_OFFSET-1 downto ID_EX_RDST_OFFSET) <= 
 IF_ID_output(REG_ADDR+IF_ID_DST_OFFSET-1 downto IF_ID_DST_OFFSET);
+
+ID_EX_input(REG_ADDR+ID_EX_RSRC_OFFSET-1 downto ID_EX_RSRC_OFFSET) <= 
+IF_ID_output(REG_ADDR+IF_ID_SRC_OFFSET-1 downto IF_ID_SRC_OFFSET);
 
 ID_EX_input(ID_EX_DST_REG_OFFSET+REG_SIZE-1 downto ID_EX_DST_REG_OFFSET) <= 
 RegFileDst_output;
@@ -382,7 +407,8 @@ IMM_VAL_extended(REG_SIZE-1 downto WORDSIZE) <= (others => '1') when
 IF_ID_output(WORDSIZE+IF_ID_IMM_OFFSET-1) = '1' else (others => '0');
 
 ID_EX_input(CONTROL_WORD_SIZE+ID_EX_CTRL_SIG_OFFSET-1 downto ID_EX_CTRL_SIG_OFFSET) <=
-control_unit_output; --TODO: chnage when forwarding implemented
+control_unit_output when Load_Use='0'
+else NOP_CONTROL_WORD; --TODO: chnage when forwarding implemented
 
 EX_MEM: 
 reg generic map (EX_MEM_input'length) 
@@ -426,9 +452,44 @@ EX_MEM_output(EX_MEM_ALU_OUTPUT_OFFSET+REG_SIZE-1 downto EX_MEM_ALU_OUTPUT_OFFSE
 MEM_WB_input(MEM_WB_WBO_OFFSET) <= EX_MEM_output(EX_MEM_WBO_OFFSET);
 MEM_WB_input(MEM_WB_REGWRITE_OFFSET) <= EX_MEM_output(EX_MEM_REGWRITE_OFFSET);
 
--- Structural Hazards
+-- Forwarding Unit
 
+SRC_Equals_EX_Dst        <= '1' when     EX_MEM_output(EX_MEM_RDST_OFFSET+REG_ADDR-1 downto EX_MEM_RDST_OFFSET)=ID_EX_output(ID_EX_RSRC_OFFSET+REG_ADDR-1 downto ID_EX_RSRC_OFFSET)
+                                else     '0';
+DST_Equals_EX_Dst        <= '1' when     EX_MEM_output(EX_MEM_RDST_OFFSET+REG_ADDR-1 downto EX_MEM_RDST_OFFSET)=ID_EX_output(ID_EX_RDST_OFFSET+REG_ADDR-1 downto ID_EX_RDST_OFFSET)
+                                else     '0';
+SRC_Equals_MEM_Dst       <= '1' when     MEM_WB_output(MEM_WB_RDST_OFFSET+REG_ADDR-1 downto MEM_WB_RDST_OFFSET)=ID_EX_output(ID_EX_RSRC_OFFSET+REG_ADDR-1 downto ID_EX_RSRC_OFFSET)
+                                else     '0';
+DST_Equals_MEM_Dst       <= '1' when     MEM_WB_output(MEM_WB_RDST_OFFSET+REG_ADDR-1 downto MEM_WB_RDST_OFFSET)=ID_EX_output(ID_EX_RDST_OFFSET+REG_ADDR-1 downto ID_EX_RDST_OFFSET)
+                                else     '0';
+EX_to_EX_Forwarding_Src  <=      EX_MEM_output(EX_MEM_REGWRITE_OFFSET)
+                             and SRC_Equals_EX_Dst;
+
+EX_to_EX_Forwarding_Dst  <=      EX_MEM_output(EX_MEM_REGWRITE_OFFSET)
+                             and DST_Equals_EX_Dst;
+
+MEM_to_EX_Forwarding_Src <=      MEM_WB_output(MEM_WB_REGWRITE_OFFSET)
+                             and SRC_Equals_MEM_Dst
+                             and not EX_to_EX_Forwarding_Src;
+
+MEM_to_EX_Forwarding_Dst <=      MEM_WB_output(MEM_WB_REGWRITE_OFFSET)
+                             and DST_Equals_MEM_Dst
+                             and not EX_to_EX_Forwarding_Dst;
+
+Forward_Src              <=     EX_to_EX_Forwarding_Src
+                             or MEM_to_EX_Forwarding_Src;
+
+Forward_Dst              <=     EX_to_EX_Forwarding_Dst
+                             or MEM_to_EX_Forwarding_Dst;
+
+
+-- Load Use
+
+Load_Use_Case <= '1' when (ID_EX_output(ID_EX_RDST_OFFSET+REG_ADDR-1 downto ID_EX_RDST_OFFSET)=IF_ID_output(IF_ID_SRC_OFFSET+REG_ADDR-1 downto IF_ID_SRC_OFFSET))
+              else '0';
+Load_Use      <= ID_EX_output(ID_EX_READ_OFFSET) and Load_Use_Case;
 
 end architecture cpu_0;
 
 
+ 
