@@ -41,6 +41,8 @@ architecture control_unit_0 of control_unit is
   constant OC_LDM  : std_logic_vector(OPCODE_SIZE-1 downto 0) := "10100";
   constant OC_LDD  : std_logic_vector(OPCODE_SIZE-1 downto 0) := "10101";
   constant OC_STD  : std_logic_vector(OPCODE_SIZE-1 downto 0) := "10110";
+  constant OC_PUSH : std_logic_vector(OPCODE_SIZE-1 downto 0) := "11011";
+  constant OC_POP  : std_logic_vector(OPCODE_SIZE-1 downto 0) := "11100";
 
   --Control words
   constant CW_NOP  : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "00000000000";
@@ -66,6 +68,8 @@ architecture control_unit_0 of control_unit is
   constant CW_LDM  : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "00000001001";
   constant CW_LDD  : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "01000011011";
   constant CW_STD  : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "10000011000";
+  constant CW_PUSH : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "10000000000";
+  constant CW_POP  : std_logic_vector(CONTROL_WORD_SIZE-1 downto 0) :=  "01000000011";
 
  begin
   control_word <= 
@@ -92,5 +96,7 @@ architecture control_unit_0 of control_unit is
   CW_LDM  when opcode = OC_LDM  else
   CW_LDD  when opcode = OC_LDD  else
   CW_STD  when opcode = OC_STD  else
+  CW_PUSH when opcode = OC_PUSH else
+  CW_POP  when opcode = OC_POP  else
   (others => '0');
 end architecture control_unit_0;

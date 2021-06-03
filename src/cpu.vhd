@@ -32,6 +32,18 @@ component reg is
           );
 end component;
 
+-- sp_reg
+component sp_reg is
+  generic (WORDSIZE : integer := 32);
+        port(
+          clk : in std_logic; 
+          rst : in std_logic; 
+          en : in std_logic;
+          d : in std_logic_vector(WORDSIZE-1 downto 0);
+          q : out std_logic_vector(WORDSIZE-1 downto 0)
+          );
+  end component;
+
 --alu
 component alu is
 generic (WORDSIZE : integer := 16);
@@ -269,6 +281,15 @@ signal DST_Equals_MEM_Dst       : std_logic;
 -- Load Use
 signal Load_Use                 : std_logic;
 signal Load_Use_Case            : std_logic;
+
+-- SP
+signal SP_carry                 : std_logic;
+signal SP_en                    : std_logic; 
+signal SP_input                 : std_logic_vector(REG_SIZE-1 downto 0); 
+signal SP_output                : std_logic_vector(REG_SIZE-1 downto 0); 
+signal SP_added                 : std_logic_vector(REG_SIZE-1 downto 0); 
+
+
 begin
 ---------------------------------Register file---------------------------------
 RegFile: 
@@ -327,10 +348,12 @@ RAM_input_en <= EX_MEM_output(EX_MEM_WRITE_OFFSET) and not
 EX_MEM_output(EX_MEM_IO_OFFSET);
 
 RAM_address <= (others=> '0') when rst = '1' else
-EX_MEM_output(EX_MEM_ALU_OUTPUT_OFFSET+RAM_ADDRESS_SIZE-1 downto 
-EX_MEM_ALU_OUTPUT_OFFSET) when EX_MEM_Use_Memory = '1' else PC_output(RAM_ADDRESS_SIZE-1 downto 0);
+EX_MEM_output(EX_MEM_ALU_OUTPUT_OFFSET+RAM_ADDRESS_SIZE-1 downto EX_MEM_ALU_OUTPUT_OFFSET) when EX_MEM_Use_Memory = '1' and EX_MEM_output(EX_MEM_IO_OFFSET)= '1'
+else SP_output(RAM_ADDRESS_SIZE-1 downto 0) when EX_MEM_Use_Memory = '1' and EX_MEM_output(EX_MEM_IO_OFFSET)= '0'
+else PC_output(RAM_ADDRESS_SIZE-1 downto 0);
 
-RAM_input <= EX_MEM_output(EX_MEM_DST_REG_OFFSET+REG_SIZE-1 downto 
+RAM_input <= EX_MEM_output(EX_MEM_ALU_OUTPUT_OFFSET+REG_SIZE -1 downto EX_MEM_ALU_OUTPUT_OFFSET) when EX_MEM_Use_Memory = '1' and EX_MEM_output(EX_MEM_IO_OFFSET)= '0'
+else EX_MEM_output(EX_MEM_DST_REG_OFFSET+REG_SIZE-1 downto 
 EX_MEM_DST_REG_OFFSET);
 -----------------------------------IO registers--------------------------------
 
@@ -500,7 +523,19 @@ Load_Use_Case <= '1' when (ID_EX_output(ID_EX_RDST_OFFSET+REG_ADDR-1 downto ID_E
               else '0';
 Load_Use      <= ID_EX_output(ID_EX_READ_OFFSET) and Load_Use_Case;
 
+-- SP
+SP:
+sp_reg generic map (REG_SIZE) 
+port map(clk, rst, SP_en, SP_input, SP_output);
+
+SP_en <= '1' when (EX_MEM_output(EX_MEM_IO_OFFSET)='0') and (EX_MEM_output(EX_MEM_READ_OFFSET) ='1' or EX_MEM_output(EX_MEM_WRITE_OFFSET)='1')
+else '0';
+
+SP_Added <= "00000000000000000000000000000010" when EX_MEM_output(EX_MEM_READ_OFFSET) = '1'
+else "11111111111111111111111111111110";
+
+SP_adder:
+ripple_adder generic map(REG_SIZE)
+port map(SP_output, SP_Added, '0', SP_input, SP_carry);
+
 end architecture cpu_0;
-
-
- 
