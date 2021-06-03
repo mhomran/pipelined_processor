@@ -1,6 +1,5 @@
 from enum import Enum
 import constants
-import stores
 
 class Token():
     """
@@ -44,13 +43,4 @@ class OperandToken(Token):
         self.nbits = 4
         pass
 
-    pass
-
-class ImmediateValueToken(Token):
-    """
-    Represents immediate value stored in second word of operand code
-    """
-    def __init__(self, code) :
-        self.code = code
-        pass
     pass

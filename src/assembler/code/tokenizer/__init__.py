@@ -2,11 +2,11 @@ import SingletonMeta
 import constants
 import tokenizer.token_types as token_types
 import re
-import stores
 
 class Tokenizer(metaclass=SingletonMeta.SingletonMeta):
     def __init__(self,position):
         self.PC = position
+        self.OrgPC = position
         
     def createOpcodeToken(self, assem_str):
         """
@@ -39,59 +39,78 @@ class Tokenizer(metaclass=SingletonMeta.SingletonMeta):
         """
         Get all tokens requires to build operand
         """
-        operand_first_token = self.createOperandToken(assem_str);
-        operand_extra_token = None
         
-        
-        # IMMEDIATE
-        '''
-        if (operand_first_token.code == constants.MODE_CODE["IMMEDIATE"]):
-            imm_val = int(re.search(constants.IMMEDIATE_VALUE_MATCHER, assem_str).group())
-            operand_extra_token = token_types.ImmediateValueToken(imm_val)'''
-        
-        return operand_first_token, operand_extra_token
+        operand_first_token = self.createOperandToken(assem_str);           
+        return operand_first_token 
     
     def tokenizeStatement(self, statement):
-        words = [[],[]]
+        words = []
+        Location = []
 
-        if (len(statement) == 0) : return words  # Handle empty sentence case
+        if (len(statement) == 0) : return words , -1  # Handle empty sentence case
         
         # .ORG
-        if (re.match(constants.ORG_REGEX, statement[0], flags=re.IGNORECASE)):
-            
-            orgJump = int(statement[1]) - self.PC 
-            i=0
-            while i < orgJump :
-                words[0].append( '{0:016b}'.format(0) )
-                i+=1
-            self.PC = int(statement[1])
+        if (re.match(constants.ORG_REGEX, statement[0])):
+            x = int(statement[1], 16)
+            self.PC  = x 
+            Location.append( str(self.PC) )
+            words.append( '{0:08b}'.format(0) + '{0:08b}'.format(x) )
 
         # INT After ORG
-        elif re.match(constants.INT_REGEX, statement[0]) :
-            words[0].append( '{0:016b}'.format( int(statement[0]) ) )
+        elif re.match(constants.IMMEDIATE_VALUE_MATCHER, statement[0]) :
+            x = int(statement[0], 16)
+            words.append( '{0:08b}'.format(0) + '{0:08b}'.format(x) )
             self.PC += 1
+            Location.append( str(self.PC) )
+            self.PC = x
+
         
         # Operation
         else:
             
             opcode_token = self.createOpcodeToken(statement[0])
-            words[0].append(opcode_token)
+            code = ''
         
+            # NOP
+            if (opcode_token.typ == constants.OpcodeType.NOP):    
+                code = '{0:08b}'.format(opcode_token.code)
+                words.append( code + '{0:08b}'.format(0) )
+                Location.append( str(self.PC) )
+                self.PC += 1
+
             # SINGLE
-            if (opcode_token.typ == constants.OpcodeType.SINGLE):
-                opd_token, ext_token = self.createOperandTokens(statement[1])
-                words[0].append(opd_token)
-                if (ext_token):
-                    words[1].append(ext_token)
+            elif (opcode_token.typ == constants.OpcodeType.SINGLE):
+                code += '{0:08b}'.format(opcode_token.code)
+
+                opd_token = self.createOperandTokens(statement[1])
+                code += '{0:04b}'.format(opd_token.code) + '{0:04b}'.format(opd_token.code)
+                
+                words.append( code  )
+                Location.append( str(self.PC) )
+                self.PC += 1
             
             # DOUBLE
             elif (opcode_token.typ == constants.OpcodeType.DOUBLE):
-                for i in range(1,3) :
-                    opd_token, ext_token = self.createOperandTokens(statement[i])
-                    words[0].append(opd_token)
-                    if (ext_token):
-                        words[1].append(ext_token)
-            self.PC += 1
+               
+                code += '{0:08b}'.format(opcode_token.code)
+                opd_token1 = self.createOperandTokens(statement[1])
+
+                opd_token2 = None
+                if re.match( constants.IMMEDIATE_VALUE_MATCHER , statement[2] ) :
+                    x = int(statement[2], 16)
+                    code += '{0:04b}'.format(opd_token1.code) + '{0:04b}'.format(opd_token1.code)      
+                    self.PC += 1
+                    codeImm = '{0:016b}'.format(x)
+                    words.append( [code , codeImm] )
+                    Location.append( [str(self.PC-1) , str(self.PC)] )
+                    self.PC += 1
+                    
+                else:
+                    opd_token2 = self.createOperandTokens(statement[2])
+                    code += '{0:04b}'.format(opd_token2.code) + '{0:04b}'.format(opd_token1.code)     
+                    words.append( code  )
+                    Location.append( str(self.PC) )
+                    self.PC += 1
         
-        return words
+        return words , Location
     pass
