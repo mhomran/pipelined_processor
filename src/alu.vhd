@@ -64,12 +64,12 @@ constant OP_OP2  : std_logic_vector((S'length)-1 downto 0)  := "10000";
 begin
 
   --operands
-  RipAdd_op1 <= not A when S = OP_NEG   
+  RipAdd_op1 <= not A when S = OP_NEG or S = OP_SUB   
   else A;
 
-  RipAdd_op2 <= not B when S = OP_SUB 
-  else (others => '1') when S = OP_DEC 
-  else B when S = OP_ADD or S = OP_AND or S = OP_OR 
+
+  RipAdd_op2 <= B when S = OP_SUB or S = OP_ADD or S = OP_AND or S = OP_OR 
+  else (others => '1') when S = OP_DEC   
   else (others => '0');
 
   --Cin
@@ -84,10 +84,10 @@ begin
   C_flag <= RipAdd_cout when S = OP_ADD
   else RipAdd_cout when S = OP_SUB
   else RipAdd_cout when S = OP_INC
-  else RipAdd_cout when S = OP_DEC
-  else A(to_integer(unsigned(A(4 downto 0)))) when 
+  else RipAdd_cout when S = OP_DEC 
+  else B(to_integer(unsigned(A(4 downto 0)))-1) when 
   S = OP_SHR and not (to_integer(unsigned(A(4 downto 0))) = 0)
-  else A(WORDSIZE-to_integer(unsigned(A(4 downto 0)))) when 
+  else B(WORDSIZE-to_integer(unsigned(A(4 downto 0)))) when 
   S = OP_SHL and not (to_integer(unsigned(A(4 downto 0))) = 0)
   else A(0) when S = OP_RRC
   else A(WORDSIZE-1) when S = OP_RLC
