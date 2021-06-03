@@ -157,9 +157,9 @@ constant ID_EX_WBO_OFFSET         : integer := ID_EX_REGWRITE_OFFSET+1;
 constant ID_EX_IO_OFFSET          : integer := ID_EX_WBO_OFFSET+1;
 constant ID_EX_IMM_OFFSET         : integer := ID_EX_IO_OFFSET+1;
 constant ID_EX_ALU_OFFSET         : integer := ID_EX_IMM_OFFSET+1;
-constant ID_EX_READ_OFFSET     : integer := ID_EX_ALU_OFFSET+ALU_SEL_SIZE;
-constant ID_EX_WRITE_OFFSET    : integer := ID_EX_READ_OFFSET+1;
-constant ID_EX_RSRC_OFFSET     : integer := ID_EX_WRITE_OFFSET+1;
+constant ID_EX_READ_OFFSET        : integer := ID_EX_ALU_OFFSET+ALU_SEL_SIZE;
+constant ID_EX_WRITE_OFFSET       : integer := ID_EX_READ_OFFSET+1;
+constant ID_EX_RSRC_OFFSET        : integer := ID_EX_WRITE_OFFSET+1;
 
 constant EX_MEM_RDST_OFFSET       : integer := 0;
 constant EX_MEM_DST_REG_OFFSET    : integer := EX_MEM_RDST_OFFSET+REG_ADDR;
@@ -167,8 +167,8 @@ constant EX_MEM_ALU_OUTPUT_OFFSET : integer := EX_MEM_DST_REG_OFFSET+REG_SIZE;
 constant EX_MEM_REGWRITE_OFFSET   : integer := EX_MEM_ALU_OUTPUT_OFFSET+REG_SIZE;
 constant EX_MEM_WBO_OFFSET        : integer := EX_MEM_REGWRITE_OFFSET+1;
 constant EX_MEM_IO_OFFSET         : integer := EX_MEM_WBO_OFFSET+1;
-constant EX_MEM_READ_OFFSET    : integer := EX_MEM_IO_OFFSET+1;
-constant EX_MEM_WRITE_OFFSET   : integer := EX_MEM_READ_OFFSET+1;
+constant EX_MEM_READ_OFFSET       : integer := EX_MEM_IO_OFFSET+1;
+constant EX_MEM_WRITE_OFFSET      : integer := EX_MEM_READ_OFFSET+1;
 
 constant MEM_WB_RDST_OFFSET       : integer := 0;
 constant MEM_WB_ALU_OUTPUT_OFFSET : integer := MEM_WB_RDST_OFFSET+REG_ADDR;
@@ -310,7 +310,7 @@ RAM_output(IF_ID_OPCODE_OFFSET+OPCODE_SIZE-1 downto IF_ID_OPCODE_OFFSET) = OC_SH
 else '0';
 
 PC_increment <= std_logic_vector(to_unsigned(2, REG_SIZE)) 
-when is_imm_instruction = '1' or rst = '1'
+when is_imm_instruction = '1' 
 else std_logic_vector(to_unsigned(1, REG_SIZE));
 
 ADDER_inst:
@@ -348,16 +348,26 @@ alu generic map(REG_SIZE)
 port map(ALU_op1, ALU_op2, ALU_sel, C, ALU_output, SetC, ClrC, SetZ, ClrZ,
 SetN, ClrN);
 
-ALU_op1 <=       ALU_op1_mux1                                                                        when ID_EX_output(ID_EX_IMM_OFFSET) = '0'
-            else ID_EX_output(ID_EX_IMM_VAL_OFFSET+REG_SIZE-1 downto ID_EX_IMM_VAL_OFFSET);
+ALU_op1 <= ALU_op1_mux1 when ID_EX_output(ID_EX_IMM_OFFSET) = '0'
+else ID_EX_output(ID_EX_IMM_VAL_OFFSET+REG_SIZE-1 downto ID_EX_IMM_VAL_OFFSET);
 
-ALU_op1_mux1 <=  ID_EX_output(ID_EX_DST_REG_OFFSET+REG_SIZE-1 downto ID_EX_DST_REG_OFFSET)           when Forward_Dst='0'
-            else EX_MEM_output(EX_MEM_ALU_OUTPUT_OFFSET+REG_SIZE-1 downto EX_MEM_ALU_OUTPUT_OFFSET)  when Forward_Dst='1' and EX_to_EX_Forwarding_Dst='1'
-            else MEM_WB_output(MEM_WB_MEM_OUTPUT_OFFSET+REG_SIZE-1 downto MEM_WB_MEM_OUTPUT_OFFSET)  when Forward_Dst='1' and MEM_to_EX_Forwarding_Dst='1';
+ALU_op1_mux1 <=  
+ID_EX_output(ID_EX_DST_REG_OFFSET+REG_SIZE-1 downto ID_EX_DST_REG_OFFSET)           
+when Forward_Dst='0'
+else EX_MEM_output(EX_MEM_ALU_OUTPUT_OFFSET+REG_SIZE-1 downto EX_MEM_ALU_OUTPUT_OFFSET)  
+when Forward_Dst='1' and EX_to_EX_Forwarding_Dst='1'
+--bug
+else RegFileWDst_input 
+when Forward_Dst='1' and MEM_to_EX_Forwarding_Dst='1';
 
-ALU_op2 <=       ID_EX_output(ID_EX_SRC_REG_OFFSET+REG_SIZE-1 downto ID_EX_SRC_REG_OFFSET)           when Forward_Src='0'
-            else EX_MEM_output(EX_MEM_ALU_OUTPUT_OFFSET+REG_SIZE-1 downto EX_MEM_ALU_OUTPUT_OFFSET)  when Forward_Src='1' and EX_to_EX_Forwarding_Src='1'
-            else MEM_WB_output(MEM_WB_MEM_OUTPUT_OFFSET+REG_SIZE-1 downto MEM_WB_MEM_OUTPUT_OFFSET)  when Forward_Src='1' and MEM_to_EX_Forwarding_Src='1';                                                                         
+ALU_op2 <=  
+ID_EX_output(ID_EX_SRC_REG_OFFSET+REG_SIZE-1 downto ID_EX_SRC_REG_OFFSET)
+when Forward_Src='0'
+else EX_MEM_output(EX_MEM_ALU_OUTPUT_OFFSET+REG_SIZE-1 downto EX_MEM_ALU_OUTPUT_OFFSET)
+when Forward_Src='1' and EX_to_EX_Forwarding_Src='1'
+else RegFileWDst_input
+when Forward_Src='1' and MEM_to_EX_Forwarding_Src='1';  
+
 ALU_sel <= ID_EX_output(ID_EX_ALU_OFFSET+ALU_SEL_SIZE-1 downto ID_EX_ALU_OFFSET);
 
 ------------------------------Status register----------------------------------
