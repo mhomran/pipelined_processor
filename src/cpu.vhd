@@ -234,6 +234,7 @@ signal N, SetN, ClrN  : std_logic;
 --PC
 signal PC_input_en    : std_logic;
 signal PC_input       : std_logic_vector(REG_SIZE-1 downto 0);
+signal PC_RA_output   : std_logic_vector(REG_SIZE-1 downto 0);
 signal PC_output      : std_logic_vector(REG_SIZE-1 downto 0);
 signal is_imm_instruction : std_logic;
 signal PC_increment   : std_logic_vector(REG_SIZE-1 downto 0);
@@ -295,11 +296,9 @@ else MEM_WB_output(MEM_WB_ALU_OUTPUT_OFFSET+REG_SIZE-1 downto
 MEM_WB_ALU_OUTPUT_OFFSET);
 -----------------------------------PC------------------------------------------
 PC: reg generic map (REG_SIZE) 
-port map(clk, rst, PC_input_en, PC_input, PC_output);  
-PC_input_en <= not (EX_MEM_Use_Memory or Load_Use);
---TODO: chnage when forwarding implemented
+port map(clk, '0', PC_input_en, PC_input, PC_output);  
+PC_input_en <= rst or not (EX_MEM_Use_Memory or Load_Use);
 
---TODO: make a unit to figure the instruction type (1 or 2 Words)
 is_imm_instruction <= '1' 
 when 
 RAM_output(IF_ID_OPCODE_OFFSET+OPCODE_SIZE-1 downto IF_ID_OPCODE_OFFSET) = OC_LDD or
@@ -310,15 +309,15 @@ RAM_output(IF_ID_OPCODE_OFFSET+OPCODE_SIZE-1 downto IF_ID_OPCODE_OFFSET) = OC_SH
 RAM_output(IF_ID_OPCODE_OFFSET+OPCODE_SIZE-1 downto IF_ID_OPCODE_OFFSET) = OC_SHR 
 else '0';
 
---TODO: PC_input <= 1 + PC_output when one_word else 2 + output
 PC_increment <= std_logic_vector(to_unsigned(2, REG_SIZE)) 
-when is_imm_instruction = '1'
+when is_imm_instruction = '1' or rst = '1'
 else std_logic_vector(to_unsigned(1, REG_SIZE));
 
 ADDER_inst:
 ripple_adder generic map(REG_SIZE)
-port map(PC_output, PC_increment, '0', PC_input, PC_carry);
+port map(PC_output, PC_increment, '0', PC_RA_output, PC_carry);
 
+PC_input <= RAM_output when rst = '1' else PC_RA_output;
 -----------------------------------RAM-----------------------------------------
 RAM_inst:
 ram generic map(WORDSIZE, RAM_ADDRESS_SIZE)
@@ -327,7 +326,8 @@ port map(clk, RAM_input_en, RAM_address, RAM_input, RAM_output);
 RAM_input_en <= EX_MEM_output(EX_MEM_WRITE_OFFSET) and not 
 EX_MEM_output(EX_MEM_IO_OFFSET);
 
-RAM_address <= EX_MEM_output(EX_MEM_ALU_OUTPUT_OFFSET+RAM_ADDRESS_SIZE-1 downto 
+RAM_address <= (others=> '0') when rst = '1' else
+EX_MEM_output(EX_MEM_ALU_OUTPUT_OFFSET+RAM_ADDRESS_SIZE-1 downto 
 EX_MEM_ALU_OUTPUT_OFFSET) when EX_MEM_Use_Memory = '1' else PC_output(RAM_ADDRESS_SIZE-1 downto 0);
 
 RAM_input <= EX_MEM_output(EX_MEM_DST_REG_OFFSET+REG_SIZE-1 downto 
