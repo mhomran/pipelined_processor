@@ -413,8 +413,9 @@ IMM_VAL_extended;
 
 IMM_VAL_extended(WORDSIZE-1 downto 0) <= IF_ID_output(WORDSIZE+IF_ID_IMM_OFFSET-1 
 downto IF_ID_IMM_OFFSET);
-IMM_VAL_extended(REG_SIZE-1 downto WORDSIZE) <= (others => '1') when 
-IF_ID_output(WORDSIZE+IF_ID_IMM_OFFSET-1) = '1' else (others => '0');
+IMM_VAL_extended(REG_SIZE-1 downto WORDSIZE) <= (others => '0');
+--IMM_VAL_extended(REG_SIZE-1 downto WORDSIZE) <= (others => '1') when 
+--IF_ID_output(WORDSIZE+IF_ID_IMM_OFFSET-1) = '1' else (others => '0');
 
 ID_EX_input(CONTROL_WORD_SIZE+ID_EX_CTRL_SIG_OFFSET-1 downto ID_EX_CTRL_SIG_OFFSET) <=
 control_unit_output when Load_Use='0'
