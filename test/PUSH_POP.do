@@ -8,6 +8,7 @@ add wave -position end sim:/cpu/MEM_WB/q
 add wave -position end sim:/cpu/SR/C
 add wave -position end sim:/cpu/SR/N
 add wave -position end sim:/cpu/SR/Z
+add wave -position end  sim:/cpu/Load_Use
 add wave -position end sim:/cpu/RegFile/R(1)/R_reg/q
 add wave -position end sim:/cpu/RegFile/R(2)/R_reg/q
 add wave -position end sim:/cpu/RegFile/R(3)/R_reg/q

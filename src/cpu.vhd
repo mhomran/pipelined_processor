@@ -379,7 +379,7 @@ ID_EX_output(ID_EX_DST_REG_OFFSET+REG_SIZE-1 downto ID_EX_DST_REG_OFFSET)
 when Forward_Dst='0'
 else EX_MEM_output(EX_MEM_ALU_OUTPUT_OFFSET+REG_SIZE-1 downto EX_MEM_ALU_OUTPUT_OFFSET)  
 when Forward_Dst='1' and EX_to_EX_Forwarding_Dst='1'
---bug
+
 else RegFileWDst_input 
 when Forward_Dst='1' and MEM_to_EX_Forwarding_Dst='1';
 
@@ -454,7 +454,7 @@ EX_MEM_input(EX_MEM_RDST_OFFSET+REG_ADDR-1 downto EX_MEM_RDST_OFFSET) <=
 ID_EX_output(ID_EX_RDST_OFFSET+ REG_ADDR-1 downto ID_EX_RDST_OFFSET);
 
 EX_MEM_input(EX_MEM_DST_REG_OFFSET+REG_SIZE-1 downto EX_MEM_DST_REG_OFFSET) <=
-ID_EX_output(ID_EX_DST_REG_OFFSET+REG_SIZE-1 downto ID_EX_DST_REG_OFFSET);
+ALU_op1_mux1;
 --TODO: Change after making the forward unit.
 
 EX_MEM_input(REG_SIZE+EX_MEM_ALU_OUTPUT_OFFSET-1 downto EX_MEM_ALU_OUTPUT_OFFSET) <=
