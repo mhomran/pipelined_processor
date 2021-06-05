@@ -350,7 +350,7 @@ EX_MEM_output(EX_MEM_IO_OFFSET);
 
 RAM_address <= (others=> '0') when rst = '1' else
 EX_MEM_output(EX_MEM_ALU_OUTPUT_OFFSET+RAM_ADDRESS_SIZE-1 downto EX_MEM_ALU_OUTPUT_OFFSET) when EX_MEM_Use_Memory = '1' and EX_MEM_output(EX_MEM_IMM_OFFSET)= '1' 
-else SP_output(RAM_ADDRESS_SIZE-1 downto 0) when EX_MEM_Use_Memory = '1'
+else SP_output(RAM_ADDRESS_SIZE-1 downto 0) when EX_MEM_Use_Memory = '1' and EX_MEM_output(EX_MEM_IMM_OFFSET)= '0'
 else PC_output(RAM_ADDRESS_SIZE-1 downto 0);
 
 RAM_input <= EX_MEM_output(EX_MEM_ALU_OUTPUT_OFFSET+REG_SIZE -1 downto EX_MEM_ALU_OUTPUT_OFFSET) when EX_MEM_Use_Memory = '1' and EX_MEM_output(EX_MEM_IMM_OFFSET)= '0'
@@ -530,7 +530,7 @@ SP:
 sp_reg generic map (REG_SIZE) 
 port map(clk, rst, SP_en, SP_input, SP_output);
 
-SP_en <= '1' when (EX_MEM_output(EX_MEM_IMM_OFFSET)='0') and (EX_MEM_output(EX_MEM_READ_OFFSET) ='1' or EX_MEM_output(EX_MEM_WRITE_OFFSET)='1')
+SP_en <= '1' when (EX_MEM_output(EX_MEM_IMM_OFFSET)='0') and EX_MEM_Use_Memory = '1'
 else '0';
 
 SP_Added <= "00000000000000000000000000000010" when EX_MEM_output(EX_MEM_READ_OFFSET) = '1'
