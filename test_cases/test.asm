@@ -1,6 +1,6 @@
 .ORG 0
 10
 
-MoV R3,2
+MoV R3,R2
 
 

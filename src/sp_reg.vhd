@@ -18,7 +18,7 @@ begin
   begin
     if falling_edge(clk) then
       if rst = '1' then
-        q <= "00000000000000000000000000001000";
+        q <= "11111111111111111111111111111110";
       elsif en = '1' then     
         q <= d;
       end if;
