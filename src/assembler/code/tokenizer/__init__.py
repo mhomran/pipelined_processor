@@ -46,31 +46,31 @@ class Tokenizer(metaclass=SingletonMeta.SingletonMeta):
     def tokenizeStatement(self, statement):
         words = []
         Location = []
-
-        if (len(statement) == 0) : return words , -1  # Handle empty sentence case
         
+        if (len(statement) == 0) : return words , -1  # Handle empty sentence case
+       
         # .ORG
         if (re.match(constants.ORG_REGEX, statement[0])):
             x = int(statement[1], 16)
             self.PC  = x 
             Location.append( str(self.PC) )
-            words.append( '{0:08b}'.format(0) + '{0:08b}'.format(x) )
-
+            
         # INT After ORG
-        elif re.match(constants.IMMEDIATE_VALUE_MATCHER, statement[0]) :
+        elif len(statement) == 1 and re.match(constants.IMMEDIATE_VALUE_MATCHER, statement[0]) :
             x = int(statement[0], 16)
-            words.append( '{0:08b}'.format(0) + '{0:08b}'.format(x) )
+            
+            words.append( [ '{0:016b}'.format(x >> 16) , '{0:016b}'.format( x & 0x0000FFFF) ]   )
             self.PC += 1
-            Location.append( str(self.PC) )
-            self.PC = x
-
+            
+            Location.append( [str(self.PC-1) , str(self.PC)] )
+            self.PC += 1
         
         # Operation
         else:
             
             opcode_token = self.createOpcodeToken(statement[0])
             code = ''
-        
+            
             # NOP
             if (opcode_token.typ == constants.OpcodeType.NOP):    
                 code = '{0:08b}'.format(opcode_token.code)

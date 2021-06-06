@@ -18,9 +18,10 @@ def wordize(lines):
         
         if (l.rstrip()) :
             statement = parser.parseSentence(l)
+            
             token_lists , Location = tokenizer.tokenizeStatement(statement)
             
-            for l in token_lists :     
+            for l in token_lists :  
                 if len(l) == 2: 
                     words.append([Location[0][0] , l[0]]) 
                     words.append([Location[0][1] , l[1]]) 

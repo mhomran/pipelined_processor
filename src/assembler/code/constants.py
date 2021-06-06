@@ -32,8 +32,8 @@ OPCODES_DICT = {
     'INC'   : 0b01111,   # 0x0F SINGLE OPERAND
     'DEC'   : 0b10000,   # 0x10 SINGLE OPERAND
     'NEG'   : 0b10001,   # 0x11 SINGLE OPERAND
-    'IN'    : 0b10010,   # 0x12 SINGLE OPERAND
-    'OUT'   : 0b10011,   # 0x13 SINGLE OPERAND
+    'OUT'   : 0b10010,   # 0x12 SINGLE OPERAND
+    'IN'    : 0b10011,   # 0x13 SINGLE OPERAND
     
     # MEMORY INSTRUCTIONS (Double Operands)
     'LDM'   : 0b10100,   # 0x14
