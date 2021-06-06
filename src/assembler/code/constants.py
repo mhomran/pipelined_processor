@@ -35,10 +35,13 @@ OPCODES_DICT = {
     'OUT'   : 0b10010,   # 0x12 SINGLE OPERAND
     'IN'    : 0b10011,   # 0x13 SINGLE OPERAND
     
-    # MEMORY INSTRUCTIONS (Double Operands)
+    # MEMORY INSTRUCTIONS 
     'LDM'   : 0b10100,   # 0x14
     'LDD'   : 0b10101,   # 0x15
     'STD'   : 0b10110,   # 0x16
+
+    'PUSH'  : 0b11011,
+    'POP'   : 0b11100
 }
 
 OPCODE_NBITS = {
@@ -73,6 +76,12 @@ OPCODE_TYPE = [
     OpcodeType.DOUBLE, #20
     OpcodeType.DOUBLE, #21
     OpcodeType.DOUBLE, #22
+    OpcodeType.NOP, #23
+    OpcodeType.NOP, #24
+    OpcodeType.NOP, #25
+    OpcodeType.NOP, #26
+    OpcodeType.SINGLE, #27
+    OpcodeType.SINGLE, #28
 
      
     #OpcodeType.JUMP,

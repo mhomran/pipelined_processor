@@ -42,12 +42,13 @@ def compile(Kargs1,Kargs2):
     # Translate to binary codes
     words = wordize(lines)
 
-    out_lines = ''
+    out_lines = "// memory data file (do not edit the following line - required for mem load use)\n// instance=/cpu/RAM_inst/ram\n// format=mti addressradix=d dataradix=b version=1.0 wordsperline=1\n"
+    
     for word in words:
         out_lines += word[0] + ": " + word[1]+'\n'
        
-
     print(Kargs2)
+
     # Write to file
     io_man.writeLineToFile(Kargs2, out_lines)
 
